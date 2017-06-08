@@ -8,20 +8,24 @@
 
 /* Begin PBXBuildFile section */
 		16E2D3EE1EE99CCF00466ABB /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16E2D3ED1EE99CCF00466ABB /* AppDelegate.swift */; };
-		16E2D3F01EE99CCF00466ABB /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16E2D3EF1EE99CCF00466ABB /* ViewController.swift */; };
+		16E2D3F01EE99CCF00466ABB /* TravelLocationMapsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16E2D3EF1EE99CCF00466ABB /* TravelLocationMapsViewController.swift */; };
 		16E2D3F31EE99CCF00466ABB /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 16E2D3F11EE99CCF00466ABB /* Main.storyboard */; };
 		16E2D3F51EE99CCF00466ABB /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 16E2D3F41EE99CCF00466ABB /* Assets.xcassets */; };
 		16E2D3F81EE99CCF00466ABB /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 16E2D3F61EE99CCF00466ABB /* LaunchScreen.storyboard */; };
+		16E2D4011EE9DBD700466ABB /* CoreDataStack.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16E2D4001EE9DBD700466ABB /* CoreDataStack.swift */; };
+		16E2D4041EE9DCC500466ABB /* MapKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 16E2D4031EE9DCC500466ABB /* MapKit.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		16E2D3EA1EE99CCF00466ABB /* ios-virtual-tourist.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "ios-virtual-tourist.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		16E2D3ED1EE99CCF00466ABB /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
-		16E2D3EF1EE99CCF00466ABB /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
+		16E2D3EF1EE99CCF00466ABB /* TravelLocationMapsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TravelLocationMapsViewController.swift; sourceTree = "<group>"; };
 		16E2D3F21EE99CCF00466ABB /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
 		16E2D3F41EE99CCF00466ABB /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		16E2D3F71EE99CCF00466ABB /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		16E2D3F91EE99CCF00466ABB /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		16E2D4001EE9DBD700466ABB /* CoreDataStack.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CoreDataStack.swift; sourceTree = "<group>"; };
+		16E2D4031EE9DCC500466ABB /* MapKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MapKit.framework; path = System/Library/Frameworks/MapKit.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -29,6 +33,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				16E2D4041EE9DCC500466ABB /* MapKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -40,6 +45,7 @@
 			children = (
 				16E2D3EC1EE99CCF00466ABB /* ios-virtual-tourist */,
 				16E2D3EB1EE99CCF00466ABB /* Products */,
+				16E2D4021EE9DCC500466ABB /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -55,13 +61,30 @@
 			isa = PBXGroup;
 			children = (
 				16E2D3ED1EE99CCF00466ABB /* AppDelegate.swift */,
-				16E2D3EF1EE99CCF00466ABB /* ViewController.swift */,
+				16E2D4001EE9DBD700466ABB /* CoreDataStack.swift */,
+				16E2D3FF1EE9DB6100466ABB /* ViewControllers */,
 				16E2D3F11EE99CCF00466ABB /* Main.storyboard */,
 				16E2D3F41EE99CCF00466ABB /* Assets.xcassets */,
 				16E2D3F61EE99CCF00466ABB /* LaunchScreen.storyboard */,
 				16E2D3F91EE99CCF00466ABB /* Info.plist */,
 			);
 			path = "ios-virtual-tourist";
+			sourceTree = "<group>";
+		};
+		16E2D3FF1EE9DB6100466ABB /* ViewControllers */ = {
+			isa = PBXGroup;
+			children = (
+				16E2D3EF1EE99CCF00466ABB /* TravelLocationMapsViewController.swift */,
+			);
+			name = ViewControllers;
+			sourceTree = "<group>";
+		};
+		16E2D4021EE9DCC500466ABB /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				16E2D4031EE9DCC500466ABB /* MapKit.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -98,6 +121,11 @@
 						CreatedOnToolsVersion = 8.3.1;
 						DevelopmentTeam = M74HARNN5W;
 						ProvisioningStyle = Automatic;
+						SystemCapabilities = {
+							com.apple.Maps.iOS = {
+								enabled = 1;
+							};
+						};
 					};
 				};
 			};
@@ -137,7 +165,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				16E2D3F01EE99CCF00466ABB /* ViewController.swift in Sources */,
+				16E2D4011EE9DBD700466ABB /* CoreDataStack.swift in Sources */,
+				16E2D3F01EE99CCF00466ABB /* TravelLocationMapsViewController.swift in Sources */,
 				16E2D3EE1EE99CCF00466ABB /* AppDelegate.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
