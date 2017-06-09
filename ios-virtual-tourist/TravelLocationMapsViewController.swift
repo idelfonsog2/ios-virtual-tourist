@@ -8,10 +8,12 @@
 
 import UIKit
 import MapKit
+import CoreLocation
 
-class TravelLocationMapsViewController: UIViewController, MKMapViewDelegate {
+class TravelLocationMapsViewController: UIViewController, MKMapViewDelegate, CLLocationManagerDelegate {
 
     // MARK: - Properties
+    var locationManager = CLLocationManager()
     
     // MARK: - IBOutlets
     @IBOutlet weak var mapView: MKMapView!
@@ -20,10 +22,28 @@ class TravelLocationMapsViewController: UIViewController, MKMapViewDelegate {
     // MARK: - App Life Cycle
     override func viewDidLoad() {
         super.viewDidLoad()
+        setupMapView()
+        startStandardUpdates()
+    }
+    
+    // MARK: - TravelLoacationMapViewControllers
+    func setupMapView() {
         self.mapView.delegate = self
         self.mapView.showsPointsOfInterest = true
+        self.mapView.showsScale = true
+        self.mapView.showsCompass = true
+        self.mapView.showsUserLocation = false
+    }
+    
+    func startStandardUpdates() {
+        locationManager.delegate = self
+        locationManager.desiredAccuracy = kCLLocationAccuracyBest
+        locationManager.requestWhenInUseAuthorization()
+        locationManager.distanceFilter = 500
+        locationManager.startUpdatingLocation()
     }
 
+    // MARK: - IBActions
     @IBAction func dropPinButton(_ sender: UILongPressGestureRecognizer) {
         
         if sender.state == .began {
@@ -52,8 +72,10 @@ class TravelLocationMapsViewController: UIViewController, MKMapViewDelegate {
             self.mapView.addAnnotation(pointAnnotation)
         }
     }
-
     
+    // MARK: - CLLocationManagerDelegate
+    
+    // MARK: - MKMapViewDelegate
     func mapView(_ mapView: MKMapView, viewFor annotation: MKAnnotation) -> MKAnnotationView? {
         let reuseId = "pin"
         
@@ -74,11 +96,18 @@ class TravelLocationMapsViewController: UIViewController, MKMapViewDelegate {
         
         return pinView
     }
-
+    
     func mapView(_ mapView: MKMapView, annotationView view: MKAnnotationView, calloutAccessoryControlTapped control: UIControl) {
         if control == view.rightCalloutAccessoryView {
             
         }
     }
+    
+    func mapView(_ mapView: MKMapView, didUpdate userLocation: MKUserLocation) {
+        print(userLocation.coordinate)
+    }
+
 }
+
+
 
