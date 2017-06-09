@@ -10,10 +10,11 @@ import UIKit
 import MapKit
 import CoreLocation
 
-class TravelLocationMapsViewController: UIViewController, MKMapViewDelegate, CLLocationManagerDelegate {
+class TravelLocationMapsViewController: UIViewController, MKMapViewDelegate, UINavigationControllerDelegate {
 
     // MARK: - Properties
-    var locationManager = CLLocationManager()
+    var locationManager: CLLocationManager?
+    var editButton: UIBarButtonItem?
     
     // MARK: - IBOutlets
     @IBOutlet weak var mapView: MKMapView!
@@ -22,25 +23,53 @@ class TravelLocationMapsViewController: UIViewController, MKMapViewDelegate, CLL
     // MARK: - App Life Cycle
     override func viewDidLoad() {
         super.viewDidLoad()
+        self.title = "Virtual Tourist"
+        
+        editButton = UIBarButtonItem(title: "EDIT", style: .done, target: self, action: #selector(editMode))
+        self.navigationItem.rightBarButtonItem = editButtonItem
+    }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
         setupMapView()
-        startStandardUpdates()
+        checkForLastCoordinates()
     }
     
     // MARK: - TravelLoacationMapViewControllers
     func setupMapView() {
         self.mapView.delegate = self
         self.mapView.showsPointsOfInterest = true
-        self.mapView.showsScale = true
         self.mapView.showsCompass = true
-        self.mapView.showsUserLocation = false
     }
     
-    func startStandardUpdates() {
-        locationManager.delegate = self
-        locationManager.desiredAccuracy = kCLLocationAccuracyBest
-        locationManager.requestWhenInUseAuthorization()
-        locationManager.distanceFilter = 500
-        locationManager.startUpdatingLocation()
+    func checkForLastCoordinates() {
+        let latitude = UserDefaults.standard.double(forKey: kLastLatitude)
+        let longitude = UserDefaults.standard.double(forKey: kLastLongitude)
+        
+        if latitude != 0, longitude != 0 {
+            let coord = CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
+            var spanCoordinate = MKCoordinateSpan()
+            var region = MKCoordinateRegion()
+            spanCoordinate.latitudeDelta = 0.5
+            spanCoordinate.longitudeDelta = 0.005
+            region.center = coord
+            region.span = spanCoordinate
+            self.mapView.setRegion(region, animated: true)
+        }
+    }
+    
+    func editMode() {
+        
+        if self.editButton?.title != "DONE" {
+            UserDefaults.standard.set(true, forKey: kEditModeOn)
+            self.editButton?.title = "Done"
+            //TODO: Show botton banner indicating that its in edit mode
+        } else {
+            self.editButton?.title = "EDIT"
+            UserDefaults.standard.set(false, forKey: kEditModeOn)
+            //TODO: Hide button banner
+        }
+        
     }
 
     // MARK: - IBActions
@@ -56,6 +85,11 @@ class TravelLocationMapsViewController: UIViewController, MKMapViewDelegate, CLL
             let pointAnnotation = MKPointAnnotation()
             pointAnnotation.coordinate = coord
             
+            UserDefaults.standard.set(coord.latitude, forKey: kLastLatitude)
+            UserDefaults.standard.set(coord.longitude, forKey: kLastLongitude)
+            print(coord.latitude)
+            print(coord.longitude)
+            
             geoCoder.reverseGeocodeLocation(location , completionHandler: { (placeMarkArray, error) in
                 guard error == nil else {
                     //TODO: Display Alert message
@@ -65,48 +99,31 @@ class TravelLocationMapsViewController: UIViewController, MKMapViewDelegate, CLL
                 let locationName = placeMarkArray?.first?.name
                 pointAnnotation.title = locationName
                 pointAnnotation.subtitle = "testing"
+
             })
             
-            
-            print(pointAnnotation.coordinate)
             self.mapView.addAnnotation(pointAnnotation)
+            print("PointAnnotation Coord: \(pointAnnotation.coordinate)")
         }
     }
-    
-    // MARK: - CLLocationManagerDelegate
     
     // MARK: - MKMapViewDelegate
-    func mapView(_ mapView: MKMapView, viewFor annotation: MKAnnotation) -> MKAnnotationView? {
-        let reuseId = "pin"
-        
-        var pinView = mapView.dequeueReusableAnnotationView(withIdentifier: reuseId) as? MKPinAnnotationView
-        
-        if pinView == nil {
-            pinView = MKPinAnnotationView(annotation: annotation, reuseIdentifier: reuseId)
-            pinView!.canShowCallout = true
-            pinView!.pinTintColor = .red
-            let button = UIButton(type: .detailDisclosure)
-            button.tintColor = UIColor.blue
-            pinView?.animatesDrop = true
-            pinView!.rightCalloutAccessoryView = button
-        }
-        else {
-            pinView!.annotation = annotation
-        }
-        
-        return pinView
-    }
-    
-    func mapView(_ mapView: MKMapView, annotationView view: MKAnnotationView, calloutAccessoryControlTapped control: UIControl) {
-        if control == view.rightCalloutAccessoryView {
-            
-        }
-    }
-    
-    func mapView(_ mapView: MKMapView, didUpdate userLocation: MKUserLocation) {
-        print(userLocation.coordinate)
+    func mapView(_ mapView: MKMapView, regionDidChangeAnimated animated: Bool) {
+        print(self.mapView.region.span)
     }
 
+    func mapView(_ mapView: MKMapView, didSelect view: MKAnnotationView) {
+        //Evaluate the state of the navigation button on the right
+        let isEditOn = UserDefaults.standard.bool(forKey: kEditModeOn)
+        
+        if isEditOn {
+            //TODO: Remove pin annotation
+            self.mapView.removeAnnotation(view.annotation!)
+        } else {
+            //TODO: GO to Album view controllers
+        }
+        
+    }
 }
 
 
