@@ -71,16 +71,26 @@ class TravelLocationMapsViewController: UIViewController, MKMapViewDelegate, UIN
         }
         
     }
+    
+    private func bboxString(latitude: Double, longitude: Double) -> String {
+        // ensure bbox is bounded by minimum and maximums
+        if  latitude != 0 &&  longitude != 0 {
+            let minimumLon = max(longitude - Flickr.SearchBBoxHalfWidth, Flickr.SearchLonRange.0)
+            let minimumLat = max(latitude - Flickr.SearchBBoxHalfHeight, Flickr.SearchLatRange.0)
+            let maximumLon = min(longitude + Flickr.SearchBBoxHalfWidth, Flickr.SearchLonRange.1)
+            let maximumLat = min(latitude + Flickr.SearchBBoxHalfHeight, Flickr.SearchLatRange.1)
+            return "\(minimumLon),\(minimumLat),\(maximumLon),\(maximumLat)"
+        } else {
+            return "0,0,0,0"
+        }
+    }
 
     // MARK: - IBActions
     @IBAction func dropPinButton(_ sender: UILongPressGestureRecognizer) {
         
         if sender.state == .began {
-            let geoCoder = CLGeocoder()
-            let touchpoint = sender.location(in: self.mapView)
+            let touchpoint: CGPoint = sender.location(in: self.mapView)
             let coord = self.mapView.convert(touchpoint, toCoordinateFrom: mapView)
-            let location = CLLocation(latitude: coord.latitude, longitude: coord.longitude)
-            
             
             let pointAnnotation = MKPointAnnotation()
             pointAnnotation.coordinate = coord
@@ -89,17 +99,15 @@ class TravelLocationMapsViewController: UIViewController, MKMapViewDelegate, UIN
             UserDefaults.standard.set(coord.longitude, forKey: kLastLongitude)
             print(coord.latitude)
             print(coord.longitude)
-            
-            geoCoder.reverseGeocodeLocation(location , completionHandler: { (placeMarkArray, error) in
-                guard error == nil else {
-                    //TODO: Display Alert message
-                    return
-                }
-                
-                let locationName = placeMarkArray?.first?.name
-                pointAnnotation.title = locationName
-                pointAnnotation.subtitle = "testing"
 
+            
+            let bbox = bboxString(latitude: coord.latitude, longitude: coord.longitude)
+            FIClient().photoSearchFor(bbox: bbox, completionHandler: { (response, success) in
+                if !success {
+                    //TODO: Display Error
+                } else {
+                    // TODO: Create Pin object with
+                }
             })
             
             self.mapView.addAnnotation(pointAnnotation)
