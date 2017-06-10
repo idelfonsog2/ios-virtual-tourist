@@ -9,6 +9,7 @@
 import UIKit
 import MapKit
 import CoreLocation
+import CoreData
 
 class TravelLocationMapsViewController: UIViewController, MKMapViewDelegate, UINavigationControllerDelegate {
 
@@ -25,6 +26,18 @@ class TravelLocationMapsViewController: UIViewController, MKMapViewDelegate, UIN
         super.viewDidLoad()
         self.title = "Virtual Tourist"
         
+        // Create teh stack
+        let delegate = UIApplication.shared.delegate as! AppDelegate
+        let stack = delegate.stack
+        
+        //Create the fetch Request 
+        let fr = NSFetchRequest<NSFetchRequestResult>(entityName: "Pin")
+
+        //Create the fetch results controller 
+        let fc = NSFetchedResultsController(fetchRequest: fr, managedObjectContext: stack.context, sectionNameKeyPath: nil, cacheName: nil)
+        
+        
+        //Add edit button to the navigaton bar
         editButton = UIBarButtonItem(title: "EDIT", style: .done, target: self, action: #selector(editMode))
         self.navigationItem.rightBarButtonItem = editButtonItem
     }
