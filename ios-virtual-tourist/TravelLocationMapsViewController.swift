@@ -107,12 +107,12 @@ class TravelLocationMapsViewController: UIViewController, MKMapViewDelegate, UIN
             
             let pointAnnotation = MKPointAnnotation()
             pointAnnotation.coordinate = coord
-            
             UserDefaults.standard.set(coord.latitude, forKey: kLastLatitude)
             UserDefaults.standard.set(coord.longitude, forKey: kLastLongitude)
             print(coord.latitude)
             print(coord.longitude)
 
+            let pin = Pin(latitude: <#T##Double#>, longitude: <#T##Double#>, context: <#T##NSManagedObjectContext#>)
             
             let bbox = bboxString(latitude: coord.latitude, longitude: coord.longitude)
             FIClient().photoSearchFor(bbox: bbox, completionHandler: { (response, success) in
