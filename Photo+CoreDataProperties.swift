@@ -2,7 +2,7 @@
 //  Photo+CoreDataProperties.swift
 //  ios-virtual-tourist
 //
-//  Created by Idelfonso Gutierrez Jr. on 6/9/17.
+//  Created by Idelfonso Gutierrez Jr. on 6/13/17.
 //  Copyright © 2017 Idelfonso Gutierrez Jr. All rights reserved.
 //
 
@@ -17,6 +17,7 @@ extension Photo {
     }
 
     @NSManaged public var imageData: NSData?
+    @NSManaged public var url: String?
     @NSManaged public var pin: Pin?
 
 }
