@@ -11,7 +11,7 @@ import MapKit
 import CoreLocation
 import CoreData
 
-class TravelLocationMapsViewController: UIViewController, MKMapViewDelegate, UINavigationControllerDelegate {
+class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegate, UINavigationControllerDelegate {
 
     // MARK: - Properties
     var locationManager: CLLocationManager?
@@ -32,9 +32,11 @@ class TravelLocationMapsViewController: UIViewController, MKMapViewDelegate, UIN
         
         //Create the fetch Request 
         let fr = NSFetchRequest<NSFetchRequestResult>(entityName: "Pin")
+        let latitudeDescriptor = NSSortDescriptor(key: "latitude", ascending: false)
+        fr.sortDescriptors = [latitudeDescriptor]
 
         //Create the fetch results controller 
-        let fc = NSFetchedResultsController(fetchRequest: fr, managedObjectContext: stack.context, sectionNameKeyPath: nil, cacheName: nil)
+        fetchedResultsController = NSFetchedResultsController(fetchRequest: fr, managedObjectContext: stack.context, sectionNameKeyPath: nil, cacheName: nil)
         
         
         //Add edit button to the navigaton bar
@@ -112,7 +114,8 @@ class TravelLocationMapsViewController: UIViewController, MKMapViewDelegate, UIN
             print(coord.latitude)
             print(coord.longitude)
 
-            let pin = Pin(latitude: <#T##Double#>, longitude: <#T##Double#>, context: <#T##NSManagedObjectContext#>)
+            //TODO: Make travelLocation inherits from a fetched
+            let pin = Pin(latitude: coord.latitude, longitude: coord.longitude, context: fetchedResultsController!.managedObjectContext)
             
             let bbox = bboxString(latitude: coord.latitude, longitude: coord.longitude)
             FIClient().photoSearchFor(bbox: bbox, completionHandler: { (response, success) in

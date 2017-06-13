@@ -9,7 +9,7 @@
 import UIKit
 import CoreData
 
-class CoreDataViewController: UICollectionViewController {
+class CoreDataViewController: UIViewController {
 
     // MARK: Properties
     
@@ -17,9 +17,7 @@ class CoreDataViewController: UICollectionViewController {
         didSet {
             // Whenever the frc changes, we execute the search and
             // reload the table
-            fetchedResultsController?.delegate = self
             executeSearch()
-            collectionView?.reloadData()
         }
     }
     
@@ -27,6 +25,7 @@ class CoreDataViewController: UICollectionViewController {
     
     init(fetchedResultsController fc : NSFetchedResultsController<NSFetchRequestResult>) {
         fetchedResultsController = fc
+        super.init(nibName: nil, bundle: nil)
     }
     
     // Implemented because of the way Swift interfaces with an Objective C
@@ -48,46 +47,3 @@ extension CoreDataViewController {
     }
 }
 
-extension CoreDataViewController: NSFetchedResultsControllerDelegate {
-    
-    func controllerWillChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
-        //tableView.beginUpdates()
-        //TODO: Research whats is this use for
-    }
-    
-    func controller(_ controller: NSFetchedResultsController<NSFetchRequestResult>, didChange sectionInfo: NSFetchedResultsSectionInfo, atSectionIndex sectionIndex: Int, for type: NSFetchedResultsChangeType) {
-        
-        let set = IndexSet(integer: sectionIndex)
-        
-        switch (type) {
-        case .insert:
-            collectionView?.insertSections(set)
-            break
-        case .delete:
-            collectionView?.deleteSections(set)
-            break
-        default:
-            // irrelevant in our case
-            break
-        }
-    }
-    
-    func controller(_ controller: NSFetchedResultsController<NSFetchRequestResult>, didChange anObject: Any, at indexPath: IndexPath?, for type: NSFetchedResultsChangeType, newIndexPath: IndexPath?) {
-        
-        switch(type) {
-        case .insert:
-            collectionView?.insertItems(at: [indexPath!])
-        case .delete:
-            collectionView?.deleteItems(at: [indexPath!])
-        case .update:
-            collectionView?.reloadItems(at: [indexPath!])
-        case .move:
-            collectionView?.deleteItems(at: [indexPath!])
-            collectionView?.insertItems(at: [indexPath!])
-        }
-    }
-    
-    func controllerDidChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
-        collectionView?.endInteractiveMovement()
-    }
-}
