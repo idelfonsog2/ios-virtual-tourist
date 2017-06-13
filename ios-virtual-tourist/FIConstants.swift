@@ -12,7 +12,7 @@ struct Flickr {
     
     static let ApiKeyValue = "142b10b740640600f46da4fddf700f48"
     static let scheme       = "https"
-    static let host         = "api.flick.com"
+    static let host         = "api.flickr.com"
     static let path         = "/services/rest"
     
     static let baseUrl = ""
@@ -27,7 +27,7 @@ struct ParameterKeys {
     static let MethodKey    = "method"
     static let API          = "api_key"
     static let Format       = "format"
-    static let NonJSONCallBack = "nonjsoncallback"
+    static let NonJSONCallBack = "nojsoncallback"
     static let Query        = "Query"
     static let Latitude     = "latitude"
     static let Longitude    = "longitude"

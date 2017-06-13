@@ -61,7 +61,7 @@
         <!--Album View Controller-->
         <scene sceneID="DpA-AR-pmg">
             <objects>
-                <viewController id="IdE-sq-gRr" customClass="AlbumViewController" customModule="ios_virtual_tourist" customModuleProvider="target" sceneMemberID="viewController">
+                <viewController storyboardIdentifier="AlbumViewController" id="IdE-sq-gRr" customClass="AlbumViewController" customModule="ios_virtual_tourist" customModuleProvider="target" sceneMemberID="viewController">
                     <layoutGuides>
                         <viewControllerLayoutGuide type="top" id="LsC-Sx-Vg4"/>
                         <viewControllerLayoutGuide type="bottom" id="ZPy-0P-MKU"/>

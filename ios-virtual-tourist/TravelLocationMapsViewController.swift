@@ -133,6 +133,7 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
     
     // MARK: - MKMapViewDelegate
     func mapView(_ mapView: MKMapView, regionDidChangeAnimated animated: Bool) {
+        //TODO: When the user opens the app, open the region where he previously was
         print(self.mapView.region.span)
     }
 

@@ -35,6 +35,8 @@ class VTNetworking: NSObject {
                 completionHandler(response, success)
             })
         }
+        
+        task.resume()
     }
     
     func converDataWithCompletionHandler(data: Data, completionHandler: @escaping(_ response: AnyObject?, _ succes: Bool) -> Void) {
