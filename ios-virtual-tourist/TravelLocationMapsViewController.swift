@@ -33,8 +33,7 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
         
         //Create the fetch Request 
         let fr = NSFetchRequest<NSFetchRequestResult>(entityName: "Pin")
-        let latitudeDescriptor = NSSortDescriptor(key: "latitude", ascending: false)
-        fr.sortDescriptors = [latitudeDescriptor]
+        fr.sortDescriptors = [] // No need for descriptors, but require by NsFRC
 
         //Create the fetch results controller 
         fetchedResultsController = NSFetchedResultsController(fetchRequest: fr, managedObjectContext: stack.context, sectionNameKeyPath: nil, cacheName: nil)
@@ -48,6 +47,7 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         setupMapView()
+        displaySavedPins()
         checkForLastCoordinates()
     }
     
@@ -58,11 +58,26 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
         self.mapView.showsCompass = true
     }
     
+    func displaySavedPins() {
+        do {
+            try fetchedResultsController?.performFetch()
+            let count = fetchedResultsController!.fetchedObjects!.count
+            for pin in 0 ..< count {
+                let item = fetchedResultsController?.fetchedObjects?[pin] as! Pin
+                arrayOfPins?.append(item)
+                print(arrayOfPins?[pin])
+            }
+        } catch {
+            print("Failer to retrive pins")
+        }
+    }
+    
     func checkForLastCoordinates() {
         let latitudeDelta   = UserDefaults.standard.double(forKey: kLastLatitudeDelta)
         let longitudeDelta  = UserDefaults.standard.double(forKey: kLastLongitudeDelta)
         let centerLatitude  = UserDefaults.standard.double(forKey: kLatitudeRegion)
         let centerLongitude = UserDefaults.standard.double(forKey: kLongitudeRegion)
+
 
         if latitudeDelta != 0, longitudeDelta != 0 {
             let centerCoordinate = CLLocationCoordinate2D(latitude: centerLatitude, longitude: centerLongitude)
@@ -73,7 +88,6 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
     }
     
     func editMode() {
-        
         if self.editButton?.title != "DONE" {
             UserDefaults.standard.set(true, forKey: kEditModeOn)
             self.editButton?.title = "Done"
@@ -83,7 +97,6 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
             UserDefaults.standard.set(false, forKey: kEditModeOn)
             //TODO: Hide button banner
         }
-        
     }
     
     private func bboxString(latitude: Double, longitude: Double) -> String {
@@ -131,6 +144,29 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
     }
     
     // MARK: - MKMapViewDelegate
+    
+    func mapView(_ mapView: MKMapView, viewFor annotation: MKAnnotation) -> MKAnnotationView? {
+        let reuseId = "pin"
+        
+        var pinView = mapView.dequeueReusableAnnotationView(withIdentifier: reuseId) as? MKPinAnnotationView
+        if pinView == nil {
+            //TODO: find the pin in a set of objects
+            for item in (fetchedResultsController?.fetchedObjects)! {
+                if item.isEqual(annotation) {
+                    print("found in core data")
+                    pinView = MKPinAnnotationView(annotation: annotation, reuseIdentifier: reuseId)
+                    pinView!.pinTintColor = .red
+                }
+            }
+        }
+        else {
+            pinView!.annotation = annotation
+        }
+        
+        return pinView
+    }
+    
+    
     func mapView(_ mapView: MKMapView, regionDidChangeAnimated animated: Bool) {
         //TODO: When the user opens the app, open the region where he previously was
         UserDefaults.standard.set(self.mapView.region.center.latitude, forKey: kLatitudeRegion)
@@ -150,14 +186,13 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
             //TODO: GO to Album view controllers
             let albumVC = storyboard?.instantiateViewController(withIdentifier: "AlbumViewController") as! AlbumViewController
             let coord = view.annotation?.coordinate
-            
-            
-            
+  
             // Create Fetch Request
             let fr = NSFetchRequest<NSFetchRequestResult>(entityName: "Pin")
             let latitudeDescriptor = NSSortDescriptor(key: "latitude", ascending: false)
             let longitudeDescriptor = NSSortDescriptor(key: "longitude", ascending: false)
             fr.sortDescriptors = [latitudeDescriptor, longitudeDescriptor]
+            
             
             
             

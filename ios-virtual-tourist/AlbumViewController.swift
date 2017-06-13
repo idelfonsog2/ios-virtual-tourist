@@ -8,8 +8,9 @@
 
 import UIKit
 import CoreData
+import MapKit
 
-class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, NSFetchedResultsControllerDelegate  {
+class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, NSFetchedResultsControllerDelegate {
 
     // MARK: - Properties
     var pin: Pin?
