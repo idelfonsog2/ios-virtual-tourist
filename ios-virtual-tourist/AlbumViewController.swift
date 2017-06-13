@@ -12,7 +12,8 @@ import CoreData
 class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, NSFetchedResultsControllerDelegate  {
 
     // MARK: - Properties
-    
+    var pin: Pin?
+
     // MARK: - IBOutlets
     @IBOutlet weak var collectionView: UICollectionView!
     

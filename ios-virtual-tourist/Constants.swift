@@ -9,10 +9,13 @@
 import Foundation
 
 // MARK: - UserDefault Names
-let kLastLatitude = "lastLatitude"
-let kLastLongitude = "lastLongitude"
-let kEditModeOn = "editModeOn"
+let kLastLatitude           = "lastLatitude"
+let kLastLongitude          = "lastLongitude"
+let kEditModeOn             = "editModeOn"
+let kLastLatitudeDelta      = "lastLatitudeDelta"
+let kLastLongitudeDelta     = "lastLongitudeDelta"
+let kLatitudeRegion         = "latitudeRegion"
+let kLongitudeRegion        = "longitudeRegion"
 
 // MARK: - Notification Names
-
 let kCaptureCoordinates = "captureCoordinates"
