@@ -33,11 +33,13 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
         
         //Create the fetch Request 
         let fr = NSFetchRequest<NSFetchRequestResult>(entityName: "Pin")
-        fr.sortDescriptors = [] // No need for descriptors, but require by NsFRC
+        let latitudeDescriptor = NSSortDescriptor(key: "latitude", ascending: false)
+        let longitudeDescriptor = NSSortDescriptor(key: "longitude", ascending: false)
+        fr.sortDescriptors = [latitudeDescriptor, longitudeDescriptor] // No need for descriptors, but require by NsFRC
 
         //Create the fetch results controller 
         fetchedResultsController = NSFetchedResultsController(fetchRequest: fr, managedObjectContext: stack.context, sectionNameKeyPath: nil, cacheName: nil)
-        
+    
         
         //Add edit button to the navigaton bar
         editButton = UIBarButtonItem(title: "EDIT", style: .done, target: self, action: #selector(editMode))
@@ -61,11 +63,10 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
     func displaySavedPins() {
         do {
             try fetchedResultsController?.performFetch()
-            let count = fetchedResultsController!.fetchedObjects!.count
+            let count =  try fetchedResultsController!.managedObjectContext.count(for: (fetchedResultsController?.fetchRequest)!)
             for pin in 0 ..< count {
-                let item = fetchedResultsController?.fetchedObjects?[pin] as! Pin
+                let item = fetchedResultsController?.object(at: IndexPath(item: pin, section: 0)) as! Pin
                 arrayOfPins?.append(item)
-                print(arrayOfPins?[pin])
             }
         } catch {
             print("Failer to retrive pins")
