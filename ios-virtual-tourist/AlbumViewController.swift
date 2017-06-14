@@ -33,7 +33,7 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, NSF
         //Create the fetch results controller
         fetchedResultsController = NSFetchedResultsController(fetchRequest: fr, managedObjectContext: stack.context, sectionNameKeyPath: nil, cacheName: nil)
         
-        let okButton = UIBarButtonItem(title: "OK", style: .done, target: self, action: #selector(goBack))
+        let okButton = UIBarButtonItem(title: "OK", style: .plain, target: self, action: #selector(goBack))
         navigationItem.leftBarButtonItem = okButton
     }
 

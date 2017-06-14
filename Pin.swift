@@ -20,4 +20,8 @@ public class Pin: NSManagedObject {
             fatalError("Unable to find entity Name")
         }
     }
+    
+    func deleteObject(pin: Pin, context: NSManagedObjectContext) {
+        self.deleteObject(pin: pin, context: context)
+    }
 }

@@ -39,11 +39,10 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
 
         //Create the fetch results controller 
         fetchedResultsController = NSFetchedResultsController(fetchRequest: fr, managedObjectContext: stack.context, sectionNameKeyPath: nil, cacheName: nil)
-    
         
         //Add edit button to the navigaton bar
-        editButton = UIBarButtonItem(title: "EDIT", style: .done, target: self, action: #selector(editMode))
-        self.navigationItem.rightBarButtonItem = editButtonItem
+        editButton = UIBarButtonItem(title: "Edit", style: .plain, target: self, action: #selector(TravelLocationMapsViewController.editMode))
+        self.navigationItem.rightBarButtonItem = editButton
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -72,7 +71,7 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
                 self.mapView.addAnnotation(annotation)
             }
         } catch {
-            print("Failer to retrive pins")
+            print("Failed to retrive pins")
         }
     }
     
@@ -94,7 +93,7 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
     func editMode() {
         if self.editButton?.title != "DONE" {
             UserDefaults.standard.set(true, forKey: kEditModeOn)
-            self.editButton?.title = "Done"
+            self.editButton?.title = "DONE"
             //TODO: Show botton banner indicating that its in edit mode
         } else {
             self.editButton?.title = "EDIT"
@@ -103,6 +102,7 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
         }
     }
     
+    //FIXME: YOU can also move this to the AlbumVC
     private func bboxString(latitude: Double, longitude: Double) -> String {
         // ensure bbox is bounded by minimum and maximums
         if  latitude != 0 &&  longitude != 0 {
@@ -125,14 +125,12 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
             
             let pointAnnotation = MKPointAnnotation()
             pointAnnotation.coordinate = coord
-            UserDefaults.standard.set(coord.latitude, forKey: kLastLatitude)
-            UserDefaults.standard.set(coord.longitude, forKey: kLastLongitude)
-            print(coord.latitude)
-            print(coord.longitude)
 
-            //TODO: Make travelLocation inherits from a fetched
-            let pin = Pin(latitude: coord.latitude, longitude: coord.longitude, context: fetchedResultsController!.managedObjectContext)
 
+            //Create the Pin, also stores it in CoreData
+            _ = Pin(latitude: coord.latitude, longitude: coord.longitude, context: fetchedResultsController!.managedObjectContext)
+
+            //FIXME: Make this call in the AlbumVC
             let bbox = bboxString(latitude: coord.latitude, longitude: coord.longitude)
             FIClient().photoSearchFor(bbox: bbox, completionHandler: { (response, success) in
                 if !success {
@@ -143,7 +141,6 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
             })
             
             self.mapView.addAnnotation(pointAnnotation)
-            print("PointAnnotation Coord: \(pointAnnotation.coordinate)")
         }
     }
     
@@ -160,13 +157,12 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
         else {
             pinView!.annotation = annotation
         }
-        
         return pinView
     }
     
     
     func mapView(_ mapView: MKMapView, regionDidChangeAnimated animated: Bool) {
-        //TODO: When the user opens the app, open the region where he previously was
+        //FIXME: try to use the object MKCoordinateRegion
         UserDefaults.standard.set(self.mapView.region.center.latitude, forKey: kLatitudeRegion)
         UserDefaults.standard.set(self.mapView.region.center.longitude, forKey: kLongitudeRegion)
         UserDefaults.standard.set(self.mapView.region.span.latitudeDelta, forKey: kLastLatitudeDelta)
@@ -175,48 +171,48 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
 
     func mapView(_ mapView: MKMapView, didSelect view: MKAnnotationView) {
         //Evaluate the state of the navigation button on the right
+        let pinSelected = view.annotation?.coordinate
         let isEditOn = UserDefaults.standard.bool(forKey: kEditModeOn)
         
         if isEditOn {
             //TODO: Remove pin annotation from CoreData no from Map!
+            
             self.mapView.removeAnnotation(view.annotation!)
         } else {
-            //TODO: GO to Album view controllers
             let albumVC = storyboard?.instantiateViewController(withIdentifier: "AlbumViewController") as! AlbumViewController
-            let coord = view.annotation?.coordinate
-  
-            // Create Fetch Request
-            let fr = NSFetchRequest<NSFetchRequestResult>(entityName: "Pin")
-            let latitudeDescriptor = NSSortDescriptor(key: "latitude", ascending: false)
-            let longitudeDescriptor = NSSortDescriptor(key: "longitude", ascending: false)
-            fr.sortDescriptors = [latitudeDescriptor, longitudeDescriptor]
-            
-            
-            
-            
-            // NSPredicate to the rescue!
-            let location = view.annotation
-            
-            for pinView in (fetchedResultsController?.fetchedObjects)! {
-                if pinView.isEqual(location) {
-                    print("found in core data")
+
+            // Find the pin from the CoreData in the init arraysOfPins
+            for pinView in arrayOfPins! {
+                if pinView.latitude == pinSelected?.latitude && pinView.longitude == pinSelected?.longitude {
+                    print("Found in core data")
+                    albumVC.pin = pinView
                 }
             }
             
-            print("not found")
-            
-            let pin = fetchedResultsController?.fetchedObjects
-            
-            //let pred = NSPredicate(format: "notebook == %@", argumentArray: [notebook!])
-            
-            //fr.predicate = pred
-
-            // you want to find the pin store in the sql coredata, for that you create an nsfetchresults
-            //albumVC.pin =
             self.navigationController?.pushViewController(albumVC, animated: true)
         }
         
     }
+    
+    // MARK: - NSFetchedResultsControllerDelegate
+
+    func controller(_ controller: NSFetchedResultsController<NSFetchRequestResult>, didChange anObject: Any, at indexPath: IndexPath?, for type: NSFetchedResultsChangeType, newIndexPath: IndexPath?) {
+        
+        
+        switch(type) {
+        case .insert:
+            print("insert")
+            break
+        case .delete:
+            print("insert")
+            break
+        case .update:
+            print("insert")
+            break
+    }
+        
+        
+    
 }
 
 
