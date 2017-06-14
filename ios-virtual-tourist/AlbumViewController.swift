@@ -21,25 +21,67 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, NSF
     // MARK: - App Life Cycle
     override func viewDidLoad() {
         super.viewDidLoad()
-        // Create teh stack
-        let delegate = UIApplication.shared.delegate as! AppDelegate
-        let stack = delegate.stack
-        
-        //Create the fetch Request
-        let fr = NSFetchRequest<NSFetchRequestResult>(entityName: "Photo")
-        let imageDescriptor = NSSortDescriptor()
-        fr.sortDescriptors = [imageDescriptor]
-        
-        //Create the fetch results controller
-        fetchedResultsController = NSFetchedResultsController(fetchRequest: fr, managedObjectContext: stack.context, sectionNameKeyPath: nil, cacheName: nil)
-        
+        initFetchRequestForPhoto()
+    }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        self.setupNavBar()
+        self.checkFlickrForPin(pin)
+    }
+    
+    // MARK: - AlbumViewController
+    
+    func setupNavBar() {
         let okButton = UIBarButtonItem(title: "OK", style: .plain, target: self, action: #selector(goBack))
         navigationItem.leftBarButtonItem = okButton
     }
-
-    // MARK: - AlbumViewController
-    func goBack() {
+    
+    func initFetchRequestForPhoto()  {
+        // Create the stack
+        let delegate = UIApplication.shared.delegate as! AppDelegate
+        let stack = delegate.stack
         
+        //Create the fetch request
+        let fr = NSFetchRequest<NSFetchRequestResult>(entityName: "Photo")
+        let urlDescriptor = NSSortDescriptor(key: "url", ascending: false)
+        fr.sortDescriptors = [urlDescriptor]
+        
+        //Create the fetch results controller
+        fetchedResultsController = NSFetchedResultsController(fetchRequest: fr, managedObjectContext: stack.context, sectionNameKeyPath: nil, cacheName: nil)
+    }
+
+    func checkFlickrForPin(_ pinToBeCheck: Pin?) {
+        if pinToBeCheck != nil {
+            //FIXME: Make this call in the AlbumVC
+            let bbox = bboxString(latitude: (pinToBeCheck?.latitude)!, longitude: (pinToBeCheck?.longitude)!)
+            FIClient().photoSearchFor(bbox: bbox, completionHandler: { (response, success) in
+                if !success {
+                    //TODO: Display Error
+                } else {
+                    // TODO: Create Pin object with
+                }
+            })
+        }
+    }
+    
+    func goBack() {
+        // TODO: Save before leaving ??
+        self.navigationController?.popViewController(animated: true)
+    }
+    
+    //FIXME: YOU can also move this to the AlbumVC
+    private func bboxString(latitude: Double, longitude: Double) -> String {
+        // ensure bbox is bounded by minimum and maximums
+        if  latitude != 0 &&  longitude != 0 {
+            let minimumLon = max(longitude - Flickr.SearchBBoxHalfWidth, Flickr.SearchLonRange.0)
+            let minimumLat = max(latitude - Flickr.SearchBBoxHalfHeight, Flickr.SearchLatRange.0)
+            let maximumLon = min(longitude + Flickr.SearchBBoxHalfWidth, Flickr.SearchLonRange.1)
+            let maximumLat = min(latitude + Flickr.SearchBBoxHalfHeight, Flickr.SearchLatRange.1)
+            return "\(minimumLon),\(minimumLat),\(maximumLon),\(maximumLat)"
+        } else {
+            return "0,0,0,0"
+        }
     }
     
     // MARK: - IBActions

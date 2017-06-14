@@ -120,19 +120,7 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
         }
     }
     
-    //FIXME: YOU can also move this to the AlbumVC
-    private func bboxString(latitude: Double, longitude: Double) -> String {
-        // ensure bbox is bounded by minimum and maximums
-        if  latitude != 0 &&  longitude != 0 {
-            let minimumLon = max(longitude - Flickr.SearchBBoxHalfWidth, Flickr.SearchLonRange.0)
-            let minimumLat = max(latitude - Flickr.SearchBBoxHalfHeight, Flickr.SearchLatRange.0)
-            let maximumLon = min(longitude + Flickr.SearchBBoxHalfWidth, Flickr.SearchLonRange.1)
-            let maximumLat = min(latitude + Flickr.SearchBBoxHalfHeight, Flickr.SearchLatRange.1)
-            return "\(minimumLon),\(minimumLat),\(maximumLon),\(maximumLat)"
-        } else {
-            return "0,0,0,0"
-        }
-    }
+
 
     // MARK: - IBActions
     @IBAction func dropPinButton(_ sender: UILongPressGestureRecognizer) {
@@ -144,19 +132,8 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
             let pointAnnotation = MKPointAnnotation()
             pointAnnotation.coordinate = coord
 
-
-            //Create the Pin, also stores it in CoreData
+            //Create the pin, it will store it in CoreData
             _ = Pin(latitude: coord.latitude, longitude: coord.longitude, context: fetchedResultsController!.managedObjectContext)
-
-            //FIXME: Make this call in the AlbumVC
-            let bbox = bboxString(latitude: coord.latitude, longitude: coord.longitude)
-            FIClient().photoSearchFor(bbox: bbox, completionHandler: { (response, success) in
-                if !success {
-                    //TODO: Display Error
-                } else {
-                    // TODO: Create Pin object with
-                }
-            })
             
             self.mapView.addAnnotation(pointAnnotation)
         }
@@ -202,7 +179,7 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
             }
         }
         
-        // , then pass it or deleted
+        // Pass it or delete it
         if let pinEdit = pinSelected {
             if isEditOn {
                 // Delete Pin
