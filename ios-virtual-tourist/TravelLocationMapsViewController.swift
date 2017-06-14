@@ -14,6 +14,7 @@ import CoreData
 class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegate, UINavigationControllerDelegate {
 
     // MARK: - Properties
+    let delegate = UIApplication.shared.delegate as! AppDelegate
     var locationManager: CLLocationManager?
     var editButton: UIBarButtonItem?
     var arrayOfPins: [Pin]?
@@ -26,33 +27,41 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
     override func viewDidLoad() {
         super.viewDidLoad()
         self.title = "Virtual Tourist"
-        
-        // Create teh stack
-        let delegate = UIApplication.shared.delegate as! AppDelegate
+        self.initCoreDataFetchRequest()
+        self.setupNavigationBar()
+    }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        self.setupMapView()
+        self.displaySavedPins()
+        self.checkForLastCoordinates()
+    }
+    
+    // MARK: - TravelLoacationMapViewControllers
+    
+    func initCoreDataFetchRequest() {
+            //Create the stack
         let stack = delegate.stack
         
-        //Create the fetch Request 
+            //Create the fetch Request
         let fr = NSFetchRequest<NSFetchRequestResult>(entityName: "Pin")
+        
+            // No need for descriptors, but require by NsFRC
         let latitudeDescriptor = NSSortDescriptor(key: "latitude", ascending: false)
         let longitudeDescriptor = NSSortDescriptor(key: "longitude", ascending: false)
-        fr.sortDescriptors = [latitudeDescriptor, longitudeDescriptor] // No need for descriptors, but require by NsFRC
-
-        //Create the fetch results controller 
-        fetchedResultsController = NSFetchedResultsController(fetchRequest: fr, managedObjectContext: stack.context, sectionNameKeyPath: nil, cacheName: nil)
+        fr.sortDescriptors = [latitudeDescriptor, longitudeDescriptor]
         
+            //Create the fetch results controller
+        fetchedResultsController = NSFetchedResultsController(fetchRequest: fr, managedObjectContext: stack.context, sectionNameKeyPath: nil, cacheName: nil)
+    }
+    
+    func setupNavigationBar() {
         //Add edit button to the navigaton bar
         editButton = UIBarButtonItem(title: "Edit", style: .plain, target: self, action: #selector(TravelLocationMapsViewController.editMode))
         self.navigationItem.rightBarButtonItem = editButton
     }
     
-    override func viewWillAppear(_ animated: Bool) {
-        super.viewWillAppear(animated)
-        setupMapView()
-        displaySavedPins()
-        checkForLastCoordinates()
-    }
-    
-    // MARK: - TravelLoacationMapViewControllers
     func setupMapView() {
         self.mapView.delegate = self
         self.mapView.showsPointsOfInterest = true
@@ -61,15 +70,24 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
     
     func displaySavedPins() {
         do {
+            arrayOfPins = []
             try fetchedResultsController?.performFetch()
-            let count =  try fetchedResultsController!.managedObjectContext.count(for: (fetchedResultsController?.fetchRequest)!)
-            for pin in 0 ..< count {
-                let item = fetchedResultsController?.object(at: IndexPath(item: pin, section: 0)) as! Pin
-                arrayOfPins?.append(item)
+
+            let arrayOf = try fetchedResultsController?.managedObjectContext.count(for: (fetchedResultsController?.fetchRequest)!)
+            
+            
+            for pin in 0 ..< arrayOf! {
+                
+                let item = fetchedResultsController?.sections?[0].objects?[pin] as! Pin
+                
+                arrayOfPins!.append(item)
                 let annotation = MKPointAnnotation()
                 annotation.coordinate = CLLocationCoordinate2D(latitude: item.latitude, longitude: item.longitude)
+                print("Item with coordinates: \(annotation.coordinate)")
                 self.mapView.addAnnotation(annotation)
             }
+    
+            print("arrayOfPins \(arrayOfPins)")
         } catch {
             print("Failed to retrive pins")
         }
@@ -171,48 +189,33 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
 
     func mapView(_ mapView: MKMapView, didSelect view: MKAnnotationView) {
         //Evaluate the state of the navigation button on the right
-        let pinSelected = view.annotation?.coordinate
         let isEditOn = UserDefaults.standard.bool(forKey: kEditModeOn)
         
-        if isEditOn {
-            //TODO: Remove pin annotation from CoreData no from Map!
-            
-            self.mapView.removeAnnotation(view.annotation!)
-        } else {
-            let albumVC = storyboard?.instantiateViewController(withIdentifier: "AlbumViewController") as! AlbumViewController
-
-            // Find the pin from the CoreData in the init arraysOfPins
-            for pinView in arrayOfPins! {
-                if pinView.latitude == pinSelected?.latitude && pinView.longitude == pinSelected?.longitude {
-                    print("Found in core data")
-                    albumVC.pin = pinView
-                }
+        let stack = delegate.stack
+        var pinSelected: Pin?
+        
+        //Look for the matching selected pin in the tempArray
+        for pinView in arrayOfPins! {
+            if pinView.latitude == view.annotation?.coordinate.latitude && pinView.longitude == view.annotation?.coordinate.longitude {
+                print("Found in core data")
+                pinSelected = pinView
             }
-            
-            self.navigationController?.pushViewController(albumVC, animated: true)
         }
         
+        // , then pass it or deleted
+        if let pinEdit = pinSelected {
+            if isEditOn {
+                // Delete Pin
+                Pin.deleteObject(pin: pinEdit, context: stack.context)
+                self.mapView.removeAnnotation(view.annotation!)
+            } else {
+                // View AlbumVC for the pin selected
+                let albumVC = storyboard?.instantiateViewController(withIdentifier: "AlbumViewController") as! AlbumViewController
+                albumVC.pin = pinEdit
+                self.navigationController?.pushViewController(albumVC, animated: true)
+            }
+        }
     }
-    
-    // MARK: - NSFetchedResultsControllerDelegate
-
-    func controller(_ controller: NSFetchedResultsController<NSFetchRequestResult>, didChange anObject: Any, at indexPath: IndexPath?, for type: NSFetchedResultsChangeType, newIndexPath: IndexPath?) {
-        
-        
-        switch(type) {
-        case .insert:
-            print("insert")
-            break
-        case .delete:
-            print("insert")
-            break
-        case .update:
-            print("insert")
-            break
-    }
-        
-        
-    
 }
 
 

@@ -21,7 +21,13 @@ public class Pin: NSManagedObject {
         }
     }
     
-    func deleteObject(pin: Pin, context: NSManagedObjectContext) {
-        self.deleteObject(pin: pin, context: context)
+    static func deleteObject(pin: Pin, context: NSManagedObjectContext) {
+        context.delete(pin)
+        do {
+            try context.save()
+            print("Context deleted objcets saved")
+        } catch {
+            fatalError("failed to save deleted objects")
+        }
     }
 }
