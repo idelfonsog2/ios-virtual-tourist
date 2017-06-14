@@ -67,6 +67,9 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
             for pin in 0 ..< count {
                 let item = fetchedResultsController?.object(at: IndexPath(item: pin, section: 0)) as! Pin
                 arrayOfPins?.append(item)
+                let annotation = MKPointAnnotation()
+                annotation.coordinate = CLLocationCoordinate2D(latitude: item.latitude, longitude: item.longitude)
+                self.mapView.addAnnotation(annotation)
             }
         } catch {
             print("Failer to retrive pins")
@@ -151,14 +154,8 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
         
         var pinView = mapView.dequeueReusableAnnotationView(withIdentifier: reuseId) as? MKPinAnnotationView
         if pinView == nil {
-            //TODO: find the pin in a set of objects
-            for item in (fetchedResultsController?.fetchedObjects)! {
-                if item.isEqual(annotation) {
-                    print("found in core data")
-                    pinView = MKPinAnnotationView(annotation: annotation, reuseIdentifier: reuseId)
-                    pinView!.pinTintColor = .red
-                }
-            }
+            pinView = MKPinAnnotationView(annotation: annotation , reuseIdentifier: reuseId)
+            pinView!.pinTintColor = .red
         }
         else {
             pinView!.annotation = annotation
