@@ -41,19 +41,22 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
     // MARK: - TravelLoacationMapViewControllers
     
     func initCoreDataFetchRequest() {
-            //Create the stack
         let stack = delegate.stack
         
-            //Create the fetch Request
+        //Create the fetch Request
         let fr = NSFetchRequest<NSFetchRequestResult>(entityName: "Pin")
-        
-            // No need for descriptors, but require by NsFRC
         let latitudeDescriptor = NSSortDescriptor(key: "latitude", ascending: false)
         let longitudeDescriptor = NSSortDescriptor(key: "longitude", ascending: false)
         fr.sortDescriptors = [latitudeDescriptor, longitudeDescriptor]
         
-            //Create the fetch results controller
+        // Init FetchResultsController
         fetchedResultsController = NSFetchedResultsController(fetchRequest: fr, managedObjectContext: stack.context, sectionNameKeyPath: nil, cacheName: nil)
+        
+        do {
+            try fetchedResultsController?.performFetch()
+        } catch {
+            fatalError("Unable to performFetch()")
+        }
     }
     
     func setupNavigationBar() {
@@ -71,23 +74,15 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
     func displaySavedPins() {
         do {
             arrayOfPins = []
-            try fetchedResultsController?.performFetch()
 
-            let arrayOf = try fetchedResultsController?.managedObjectContext.count(for: (fetchedResultsController?.fetchRequest)!)
-            
-            
-            for pin in 0 ..< arrayOf! {
-                
-                let item = fetchedResultsController?.sections?[0].objects?[pin] as! Pin
-                
-                arrayOfPins!.append(item)
+            let array = try! delegate.stack.context.fetch((fetchedResultsController?.fetchRequest)!) as? [Pin]
+            for pin in array! {
+                arrayOfPins!.append(pin)
                 let annotation = MKPointAnnotation()
-                annotation.coordinate = CLLocationCoordinate2D(latitude: item.latitude, longitude: item.longitude)
+                annotation.coordinate = CLLocationCoordinate2D(latitude: pin.latitude, longitude: pin.longitude)
                 print("Item with coordinates: \(annotation.coordinate)")
                 self.mapView.addAnnotation(annotation)
             }
-    
-            print("arrayOfPins \(arrayOfPins)")
         } catch {
             print("Failed to retrive pins")
         }

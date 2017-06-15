@@ -49,6 +49,12 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, NSF
         
         //Create the fetch results controller
         fetchedResultsController = NSFetchedResultsController(fetchRequest: fr, managedObjectContext: stack.context, sectionNameKeyPath: nil, cacheName: nil)
+        
+        do {
+            try fetchedResultsController?.performFetch()
+        } catch {
+            fatalError("Unable to performFetch()")
+        }
     }
 
     func checkFlickrForPin(_ pinToBeCheck: Pin?) {
