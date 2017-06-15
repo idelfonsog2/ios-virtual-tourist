@@ -26,7 +26,7 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, NSF
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        self.setupNavBar()
+        //self.setupNavBar()
         self.checkFlickrForPin(pin)
     }
     

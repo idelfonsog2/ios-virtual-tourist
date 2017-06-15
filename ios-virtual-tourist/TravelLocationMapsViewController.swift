@@ -184,19 +184,21 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
                 // View AlbumVC for the pin selected
                 
                 //TODO: pass the fetchRequest instead of the Pin??
-//                let fr = NSFetchRequest<NSFetchRequestResult>(entityName: "Photo")
-//                
-//                fr.sortDescriptors = [NSSortDescriptor(key: "url", ascending: true)]
-//
-//                let notebook = fetchedResultsController?.fetchedObjects?.elementsEqual(other: Sequence, by: (NSFetchRequestResult, NSFetchRequestResult) throws -> Bool)
-//
-//                let pred = NSPredicate(format: "url == %@", argumentArray: [notebook!])
-//                
-//                fr.predicate = pred
-        
+                let fr = NSFetchRequest<NSFetchRequestResult>(entityName: "Photo")
                 
+                fr.sortDescriptors = [NSSortDescriptor(key: "url", ascending: false), NSSortDescriptor(key: "imageData", ascending: false)]
+
+                let pred = NSPredicate(format: "pin == %@", argumentArray: [pinSelected!])
+                
+                fr.predicate = pred
+        
+                // Create FetchedResultsController
+                let fc = NSFetchedResultsController(fetchRequest: fr, managedObjectContext:fetchedResultsController!.managedObjectContext, sectionNameKeyPath: nil, cacheName: nil)
+                
+                // Inject it into the notesVC
                 let albumVC = storyboard?.instantiateViewController(withIdentifier: "AlbumViewController") as! AlbumViewController
-                albumVC.pin = pinEdit
+                albumVC.fetchedResultsController = fc
+                //albumVC.pin = pinSelected
                 self.navigationController?.pushViewController(albumVC, animated: true)
             }
         }
