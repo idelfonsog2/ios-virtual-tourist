@@ -76,8 +76,8 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, NSF
         self.navigationController?.popViewController(animated: true)
     }
     
-    //FIXME: YOU can also move this to the AlbumVC
-    private func bboxString(latitude: Double, longitude: Double) -> String {
+    
+    func bboxString(latitude: Double, longitude: Double) -> String {
         // ensure bbox is bounded by minimum and maximums
         if  latitude != 0 &&  longitude != 0 {
             let minimumLon = max(longitude - Flickr.SearchBBoxHalfWidth, Flickr.SearchLonRange.0)

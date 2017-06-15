@@ -130,6 +130,8 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
             //Create the pin, it will store it in CoreData
             _ = Pin(latitude: coord.latitude, longitude: coord.longitude, context: fetchedResultsController!.managedObjectContext)
             
+            let albumVC = storyboard?.instantiateViewController(withIdentifier: "AlbumViewController") as! AlbumViewController
+            let bbstring = albumVC.bboxString(latitude: coord.latitude, longitude: coord.longitude)
             self.mapView.addAnnotation(pointAnnotation)
         }
     }
@@ -183,12 +185,11 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
             } else {
                 // View AlbumVC for the pin selected
                 
-                //TODO: pass the fetchRequest instead of the Pin??
                 let fr = NSFetchRequest<NSFetchRequestResult>(entityName: "Photo")
                 
                 fr.sortDescriptors = [NSSortDescriptor(key: "url", ascending: false), NSSortDescriptor(key: "imageData", ascending: false)]
 
-                let pred = NSPredicate(format: "pin == %@", argumentArray: [pinSelected!])
+                let pred = NSPredicate(format: "pin == %@", [pinSelected])
                 
                 fr.predicate = pred
         
@@ -198,7 +199,6 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
                 // Inject it into the notesVC
                 let albumVC = storyboard?.instantiateViewController(withIdentifier: "AlbumViewController") as! AlbumViewController
                 albumVC.fetchedResultsController = fc
-                //albumVC.pin = pinSelected
                 self.navigationController?.pushViewController(albumVC, animated: true)
             }
         }
