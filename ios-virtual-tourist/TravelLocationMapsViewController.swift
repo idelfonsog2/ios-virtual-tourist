@@ -188,17 +188,19 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
                 let fr = NSFetchRequest<NSFetchRequestResult>(entityName: "Photo")
                 
                 fr.sortDescriptors = [NSSortDescriptor(key: "url", ascending: false), NSSortDescriptor(key: "imageData", ascending: false)]
-
+                
                 let pred = NSPredicate(format: "pin == %@", [pinSelected])
                 
                 fr.predicate = pred
-        
+                
                 // Create FetchedResultsController
                 let fc = NSFetchedResultsController(fetchRequest: fr, managedObjectContext:fetchedResultsController!.managedObjectContext, sectionNameKeyPath: nil, cacheName: nil)
                 
                 // Inject it into the notesVC
                 let albumVC = storyboard?.instantiateViewController(withIdentifier: "AlbumViewController") as! AlbumViewController
                 albumVC.fetchedResultsController = fc
+                // FIXME: use relation
+                //albumVC.pin = pinEdit
                 self.navigationController?.pushViewController(albumVC, animated: true)
             }
         }
