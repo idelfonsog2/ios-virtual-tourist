@@ -182,6 +182,19 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
                 self.mapView.removeAnnotation(view.annotation!)
             } else {
                 // View AlbumVC for the pin selected
+                
+                //TODO: pass the fetchRequest instead of the Pin??
+//                let fr = NSFetchRequest<NSFetchRequestResult>(entityName: "Photo")
+//                
+//                fr.sortDescriptors = [NSSortDescriptor(key: "url", ascending: true)]
+//
+//                let notebook = fetchedResultsController?.fetchedObjects?.elementsEqual(other: Sequence, by: (NSFetchRequestResult, NSFetchRequestResult) throws -> Bool)
+//
+//                let pred = NSPredicate(format: "url == %@", argumentArray: [notebook!])
+//                
+//                fr.predicate = pred
+        
+                
                 let albumVC = storyboard?.instantiateViewController(withIdentifier: "AlbumViewController") as! AlbumViewController
                 albumVC.pin = pinEdit
                 self.navigationController?.pushViewController(albumVC, animated: true)
