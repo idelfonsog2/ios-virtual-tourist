@@ -149,6 +149,7 @@
                     <simulatedNavigationBarMetrics key="simulatedTopBarMetrics" prompted="NO"/>
                     <connections>
                         <outlet property="collectionView" destination="JhJ-RM-mZk" id="2g9-VN-dxK"/>
+                        <outlet property="mapView" destination="iPV-C2-k2c" id="gai-OL-UnD"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="1Fo-Mh-raA" userLabel="First Responder" sceneMemberID="firstResponder"/>

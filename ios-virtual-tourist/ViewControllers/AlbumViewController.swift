@@ -15,11 +15,12 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
     // MARK: - Properties
     var pin: Pin?
     var arrayOfImages: [Photo]?
-    var arrayOfImageData: [Data]?
+    var arrayOfData: [Data]?
     let delegate = UIApplication.shared.delegate as! AppDelegate
     
     // MARK: - IBOutlets
     @IBOutlet weak var collectionView: UICollectionView!
+    @IBOutlet weak var mapView: MKMapView!
     
     // MARK: - App Life Cycle
     override func viewDidLoad() {
@@ -32,12 +33,26 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         self.loadImages()
+        self.loadPreviewMap()
     }
     
     // MARK: - AlbumViewController
     
+    func loadPreviewMap() {
+        let annotation = MKPointAnnotation()
+        annotation.coordinate = CLLocationCoordinate2D(latitude: pin!.latitude, longitude: pin!.longitude)
+        let span = MKCoordinateSpan(latitudeDelta: -90 - , longitudeDelta: <#T##CLLocationDegrees#>)
+        self.mapView.setRegion(<#T##region: MKCoordinateRegion##MKCoordinateRegion#>, animated: <#T##Bool#>)
+        self.mapView.addAnnotation(annotation)
+    }
+    
+    func regionForAnnotation() -> MKCoordinateRegion {
+        
+    }
+    
+    
     func loadImages() {
-        arrayOfImageData = []
+        arrayOfData = []
         do {
             // Look for images in Database
             let array = try delegate.stack.context.fetch((fetchedResultsController?.fetchRequest)!) as? [Photo]
@@ -88,9 +103,10 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
                     let imageUrlArray = response as! [String]
                     for imageURL in  imageUrlArray {
                         do {
+                            // Build Photo Model Object, no need to assign it
                             let data = try Data(contentsOf: URL(string: imageURL)!)
-                            print("dataObject: \(data)")
-                            self.arrayOfImageData?.append(data)
+                            _ = Photo(imageData: data as NSData, context: self.delegate.stack.context)
+                            self.arrayOfData?.append(data)
                         } catch {
                             fatalError("Error appending data element to array")
                         }
@@ -103,11 +119,6 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
                 }
             })
         }
-    }
-    
-    func goBack() {
-        // TODO: Save before leaving ??
-        self.navigationController?.popViewController(animated: true)
     }
     
     
@@ -151,14 +162,13 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
         cell.backgroundColor = UIColor.blue
         cell.activityIndicatorImageView.startAnimating()
         
-        if arrayOfImageData != nil && arrayOfImageData?.count != 0{
-            let photo = self.arrayOfImageData?[indexPath.row]
+        // DataReloaded to display images when they have finally downloaded
+        if arrayOfData != nil && arrayOfData?.count != 0 {
+            let photo = self.arrayOfData?[indexPath.row]
             cell.imageView?.image = UIImage(data: photo!)
             cell.activityIndicatorImageView.stopAnimating()
             cell.activityIndicatorImageView.isHidden = true
         }
-        
-        //TODO: if array == 0, show loading activity indicator
         
         return cell
     }
