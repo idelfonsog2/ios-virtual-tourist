@@ -6,6 +6,7 @@
     <dependencies>
         <deployment identifier="iOS"/>
         <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="12089"/>
+        <capability name="Constraints to layout margins" minToolsVersion="6.0"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
     <scenes>
@@ -95,7 +96,31 @@
                                                 <view key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center">
                                                     <rect key="frame" x="0.0" y="0.0" width="99" height="100"/>
                                                     <autoresizingMask key="autoresizingMask"/>
+                                                    <subviews>
+                                                        <imageView userInteractionEnabled="NO" contentMode="scaleToFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="84u-Tf-9yo">
+                                                            <rect key="frame" x="0.0" y="0.0" width="99" height="100"/>
+                                                        </imageView>
+                                                        <activityIndicatorView opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" style="gray" translatesAutoresizingMaskIntoConstraints="NO" id="cOS-9i-TDY">
+                                                            <rect key="frame" x="13" y="13" width="73" height="74"/>
+                                                        </activityIndicatorView>
+                                                    </subviews>
                                                 </view>
+                                                <constraints>
+                                                    <constraint firstItem="84u-Tf-9yo" firstAttribute="leading" secondItem="VMf-gw-T7f" secondAttribute="leading" id="32S-b9-YmQ"/>
+                                                    <constraint firstItem="cOS-9i-TDY" firstAttribute="centerY" secondItem="VMf-gw-T7f" secondAttribute="centerY" id="476-56-5GD"/>
+                                                    <constraint firstItem="cOS-9i-TDY" firstAttribute="centerX" secondItem="VMf-gw-T7f" secondAttribute="centerX" id="ELv-a0-RdC"/>
+                                                    <constraint firstItem="cOS-9i-TDY" firstAttribute="leading" secondItem="VMf-gw-T7f" secondAttribute="leadingMargin" constant="5" id="V1V-Vy-SzI"/>
+                                                    <constraint firstAttribute="bottomMargin" secondItem="cOS-9i-TDY" secondAttribute="bottom" constant="5" id="bMC-Ry-anp"/>
+                                                    <constraint firstItem="84u-Tf-9yo" firstAttribute="top" secondItem="VMf-gw-T7f" secondAttribute="top" id="egB-ry-BIZ"/>
+                                                    <constraint firstAttribute="bottom" secondItem="84u-Tf-9yo" secondAttribute="bottom" id="iBu-fN-X4q"/>
+                                                    <constraint firstAttribute="trailing" secondItem="84u-Tf-9yo" secondAttribute="trailing" id="mN5-rs-7iJ"/>
+                                                    <constraint firstAttribute="trailingMargin" secondItem="cOS-9i-TDY" secondAttribute="trailing" constant="5" id="opt-wV-Uby"/>
+                                                    <constraint firstItem="cOS-9i-TDY" firstAttribute="top" secondItem="VMf-gw-T7f" secondAttribute="topMargin" constant="5" id="yQg-8R-4oB"/>
+                                                </constraints>
+                                                <connections>
+                                                    <outlet property="activityIndicatorImageView" destination="cOS-9i-TDY" id="8Yv-qc-Mk6"/>
+                                                    <outlet property="imageView" destination="84u-Tf-9yo" id="VhM-TR-61v"/>
+                                                </connections>
                                             </collectionViewCell>
                                         </cells>
                                     </collectionView>

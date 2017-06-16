@@ -24,34 +24,33 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
     // MARK: - App Life Cycle
     override func viewDidLoad() {
         super.viewDidLoad()
+        self.collectionView.delegate = self
+        self.collectionView.dataSource = self
         self.initFetchRequestForPhoto()
-        self.loadImages()
     }
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        //self.setupNavBar()
         self.loadImages()
     }
     
     // MARK: - AlbumViewController
     
     func loadImages() {
-        arrayOfImages = []
-        
+        arrayOfImageData = []
         do {
-            let array = try! delegate.stack.context.fetch((fetchedResultsController?.fetchRequest)!) as? [Photo]
+            // Look for images in Database
+            let array = try delegate.stack.context.fetch((fetchedResultsController?.fetchRequest)!) as? [Photo]
             
             if array?.count != 0 {
                 for image in array! {
                     arrayOfImages?.append(image)
-                    //TODO: UserDefaults to let de collection view delegate that we have images
-                    //apend
+                    //TODO: create Photo
                 }
             } else {
+                // download images from Flickr
                 self.getFlickrImagesForPin(self.pin)
             }
-            
         } catch {
             fatalError("Unable to retrieve images")
         }
@@ -81,28 +80,25 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
     func getFlickrImagesForPin(_ pinToBeCheck: Pin?) {
         if pinToBeCheck != nil {
             let bbox = bboxString(latitude: (pinToBeCheck?.latitude)!, longitude: (pinToBeCheck?.longitude)!)
+            
             FIClient().photoSearchFor(bbox: bbox, completionHandler: { (response, success) in
                 if !success {
                     print("Error downloading picture")
                 } else {
-                    // TODO: response is an arrary of photo dictionary
-                    // get MediumURL
                     let imageUrlArray = response as! [String]
-                    for i in  imageUrlArray {
-                        self.arrayOfImageData(Data(contentsOf: imageURL!))
-                    }
-                    
-                    //todo: build this in the collectiondelegate
-                    if let imageData = try?  {
-                        DispatchQueue.main.async {
-                            self.setUIEnabled(true)
-                            self.photoImageView.image = UIImage(data: imageData)
-                            self.photoTitleLabel.text = photoTitle ?? "(Untitled)"
+                    for imageURL in  imageUrlArray {
+                        do {
+                            let data = try Data(contentsOf: URL(string: imageURL)!)
+                            self.arrayOfImageData?.append(data)
+                        } catch {
+                            fatalError("Error appending data element to array")
                         }
                     }
-                    print(response as! [String])
                     
-                    self.getImageDataForUrl(url: )
+                    //After the imges have been downloaded
+                    DispatchQueue.main.async {
+                        self.collectionView.reloadData()
+                    }
                 }
             })
         }
@@ -138,10 +134,11 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
     
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         
-        if arrayOfImages?.count != 0 {
+        //Carefull with this statement the first condition will be evaluates
+        if arrayOfImages != nil{
             return arrayOfImages!.count
         } else {
-            return 0
+            return 10
         }
     }
     
@@ -149,6 +146,16 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
     
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let cell =  collectionView.dequeueReusableCell(withReuseIdentifier: "FlickrImageCollectionViewCell", for: indexPath) as! FlickrImageCollectionViewCell
+        
+        cell.backgroundColor = UIColor.blue
+        cell.activityIndicatorImageView.startAnimating()
+        
+        if arrayOfImageData != nil {
+            let photo = self.arrayOfImageData?[indexPath.row]
+            cell.imageView?.image = UIImage(data: photo!)
+            cell.activityIndicatorImageView.stopAnimating()
+            cell.activityIndicatorImageView.isHidden = true
+        }
         
         //TODO: if array == 0, show loading activity indicator
         
