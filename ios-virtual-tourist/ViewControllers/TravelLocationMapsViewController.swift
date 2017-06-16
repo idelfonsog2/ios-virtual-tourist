@@ -129,9 +129,6 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
 
             //Create the pin, it will store it in CoreData
             _ = Pin(latitude: coord.latitude, longitude: coord.longitude, context: fetchedResultsController!.managedObjectContext)
-            
-            let albumVC = storyboard?.instantiateViewController(withIdentifier: "AlbumViewController") as! AlbumViewController
-            let bbstring = albumVC.bboxString(latitude: coord.latitude, longitude: coord.longitude)
             self.mapView.addAnnotation(pointAnnotation)
         }
     }

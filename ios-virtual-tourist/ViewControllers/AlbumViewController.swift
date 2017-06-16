@@ -10,32 +10,53 @@ import UIKit
 import CoreData
 import MapKit
 
-class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, NSFetchedResultsControllerDelegate {
+class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UICollectionViewDataSource {
 
     // MARK: - Properties
     var pin: Pin?
-
+    var arrayOfImages: [Photo]?
+    var arrayOfImageData: [Data]?
+    let delegate = UIApplication.shared.delegate as! AppDelegate
+    
     // MARK: - IBOutlets
     @IBOutlet weak var collectionView: UICollectionView!
     
     // MARK: - App Life Cycle
     override func viewDidLoad() {
         super.viewDidLoad()
-        initFetchRequestForPhoto()
+        self.initFetchRequestForPhoto()
+        self.loadImages()
     }
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         //self.setupNavBar()
-        self.checkFlickrForPin(pin)
+        self.loadImages()
     }
     
     // MARK: - AlbumViewController
     
-    func setupNavBar() {
-        let okButton = UIBarButtonItem(title: "OK", style: .plain, target: self, action: #selector(goBack))
-        navigationItem.leftBarButtonItem = okButton
+    func loadImages() {
+        arrayOfImages = []
+        
+        do {
+            let array = try! delegate.stack.context.fetch((fetchedResultsController?.fetchRequest)!) as? [Photo]
+            
+            if array?.count != 0 {
+                for image in array! {
+                    arrayOfImages?.append(image)
+                    //TODO: UserDefaults to let de collection view delegate that we have images
+                    //apend
+                }
+            } else {
+                self.getFlickrImagesForPin(self.pin)
+            }
+            
+        } catch {
+            fatalError("Unable to retrieve images")
+        }
     }
+
     
     func initFetchRequestForPhoto()  {
         // Create the stack
@@ -57,15 +78,31 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, NSF
         }
     }
 
-    func checkFlickrForPin(_ pinToBeCheck: Pin?) {
+    func getFlickrImagesForPin(_ pinToBeCheck: Pin?) {
         if pinToBeCheck != nil {
-            //FIXME: Make this call in the AlbumVC
             let bbox = bboxString(latitude: (pinToBeCheck?.latitude)!, longitude: (pinToBeCheck?.longitude)!)
             FIClient().photoSearchFor(bbox: bbox, completionHandler: { (response, success) in
                 if !success {
-                    //TODO: Display Error
+                    print("Error downloading picture")
                 } else {
-                    // TODO: Create Pin object with
+                    // TODO: response is an arrary of photo dictionary
+                    // get MediumURL
+                    let imageUrlArray = response as! [String]
+                    for i in  imageUrlArray {
+                        self.arrayOfImageData(Data(contentsOf: imageURL!))
+                    }
+                    
+                    //todo: build this in the collectiondelegate
+                    if let imageData = try?  {
+                        DispatchQueue.main.async {
+                            self.setUIEnabled(true)
+                            self.photoImageView.image = UIImage(data: imageData)
+                            self.photoTitleLabel.text = photoTitle ?? "(Untitled)"
+                        }
+                    }
+                    print(response as! [String])
+                    
+                    self.getImageDataForUrl(url: )
                 }
             })
         }
@@ -94,53 +131,28 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, NSF
     @IBAction func newCollectionButtonPressed(_ sender: UIButton) {
     }
 
+    // MARK: - UICollectionViewDataSource
+    func numberOfSections(in collectionView: UICollectionView) -> Int {
+        return 1
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
+        
+        if arrayOfImages?.count != 0 {
+            return arrayOfImages!.count
+        } else {
+            return 0
+        }
+    }
+    
     // MARK: - UICollectionViewDelegate
+    
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let cell =  collectionView.dequeueReusableCell(withReuseIdentifier: "FlickrImageCollectionViewCell", for: indexPath) as! FlickrImageCollectionViewCell
+        
+        //TODO: if array == 0, show loading activity indicator
         
         return cell
     }
     
-    // MARK: - NSFetchedResultsControllerDelegate
-    
-    func controllerWillChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
-        //tableView.beginUpdates()
-        //TODO: Research whats is this use for
-    }
-    
-    func controller(_ controller: NSFetchedResultsController<NSFetchRequestResult>, didChange sectionInfo: NSFetchedResultsSectionInfo, atSectionIndex sectionIndex: Int, for type: NSFetchedResultsChangeType) {
-        
-        let set = IndexSet(integer: sectionIndex)
-        
-        switch (type) {
-        case .insert:
-            collectionView?.insertSections(set)
-            break
-        case .delete:
-            collectionView?.deleteSections(set)
-            break
-        default:
-            // irrelevant in our case
-            break
-        }
-    }
-    
-    func controller(_ controller: NSFetchedResultsController<NSFetchRequestResult>, didChange anObject: Any, at indexPath: IndexPath?, for type: NSFetchedResultsChangeType, newIndexPath: IndexPath?) {
-        
-        switch(type) {
-        case .insert:
-            collectionView?.insertItems(at: [indexPath!])
-        case .delete:
-            collectionView?.deleteItems(at: [indexPath!])
-        case .update:
-            collectionView?.reloadItems(at: [indexPath!])
-        case .move:
-            collectionView?.deleteItems(at: [indexPath!])
-            collectionView?.insertItems(at: [indexPath!])
-        }
-    }
-    
-    func controllerDidChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
-        collectionView?.endInteractiveMovement()
-    }
 }

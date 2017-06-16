@@ -32,10 +32,12 @@ struct ParameterKeys {
     static let Latitude     = "latitude"
     static let Longitude    = "longitude"
     static let Bbox         = "bbox"
+    static let Extras       = "extras"
 }
 
 struct ParameterValues {
     static let JSONValue    = "json"
+    static let UrlM         = "url_m"
     static let JSONCallBackValue = 1
 }
 
@@ -49,4 +51,8 @@ struct ResponseKeys {
     static let Place    = "place"
     static let PlaceId  = "place_id"
     static let Status   = "stat"
+    
+    static let Photos   = "photos"
+    static let Photo    = "photo"
+    static let UrlM     = "url_m"
 }
