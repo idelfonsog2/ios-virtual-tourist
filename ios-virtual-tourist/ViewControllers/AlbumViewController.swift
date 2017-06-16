@@ -89,6 +89,7 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
                     for imageURL in  imageUrlArray {
                         do {
                             let data = try Data(contentsOf: URL(string: imageURL)!)
+                            print("dataObject: \(data)")
                             self.arrayOfImageData?.append(data)
                         } catch {
                             fatalError("Error appending data element to array")
@@ -150,7 +151,7 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
         cell.backgroundColor = UIColor.blue
         cell.activityIndicatorImageView.startAnimating()
         
-        if arrayOfImageData != nil {
+        if arrayOfImageData != nil && arrayOfImageData?.count != 0{
             let photo = self.arrayOfImageData?[indexPath.row]
             cell.imageView?.image = UIImage(data: photo!)
             cell.activityIndicatorImageView.stopAnimating()
