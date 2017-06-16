@@ -189,7 +189,7 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
                 
                 fr.sortDescriptors = [NSSortDescriptor(key: "url", ascending: false), NSSortDescriptor(key: "imageData", ascending: false)]
                 
-                let pred = NSPredicate(format: "pin == %@", [pinSelected])
+                let pred = NSPredicate(format: "pin == %@", pinSelected!)
                 
                 fr.predicate = pred
                 
@@ -199,8 +199,8 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
                 // Inject it into the notesVC
                 let albumVC = storyboard?.instantiateViewController(withIdentifier: "AlbumViewController") as! AlbumViewController
                 albumVC.fetchedResultsController = fc
-                // FIXME: use relation
-                //albumVC.pin = pinEdit
+                // Pass the pin to associate the images with
+                albumVC.pin = pinEdit
                 self.navigationController?.pushViewController(albumVC, animated: true)
             }
         }
