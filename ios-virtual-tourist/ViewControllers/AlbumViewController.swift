@@ -16,6 +16,7 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
     var pin: Pin?
     var arrayOfImages: [Photo]?
     var arrayOfData: [Data]?
+    var mapRegion: MKCoordinateRegion?
     let delegate = UIApplication.shared.delegate as! AppDelegate
     
     // MARK: - IBOutlets
@@ -41,26 +42,19 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
     func loadPreviewMap() {
         let annotation = MKPointAnnotation()
         annotation.coordinate = CLLocationCoordinate2D(latitude: pin!.latitude, longitude: pin!.longitude)
-        let span = MKCoordinateSpan(latitudeDelta: -90 - , longitudeDelta: <#T##CLLocationDegrees#>)
-        self.mapView.setRegion(<#T##region: MKCoordinateRegion##MKCoordinateRegion#>, animated: <#T##Bool#>)
+        self.mapView.setRegion(mapRegion!, animated: true)
         self.mapView.addAnnotation(annotation)
     }
-    
-    func regionForAnnotation() -> MKCoordinateRegion {
-        
-    }
-    
     
     func loadImages() {
         arrayOfData = []
         do {
             // Look for images in Database
-            let array = try delegate.stack.context.fetch((fetchedResultsController?.fetchRequest)!) as? [Photo]
+            let arrayOfPhotosModel = try delegate.stack.context.fetch((fetchedResultsController?.fetchRequest)!) as? [Photo]
             
-            if array?.count != 0 {
-                for image in array! {
-                    arrayOfImages?.append(image)
-                    //TODO: create Photo
+            if arrayOfPhotosModel?.count != 0 {
+                for imageData in arrayOfPhotosModel! {
+                    arrayOfData?.append(imageData.imageData as! Data)
                 }
             } else {
                 // download images from Flickr
@@ -92,6 +86,7 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
         }
     }
 
+    //FIXME: try to show images as per those already downloaded
     func getFlickrImagesForPin(_ pinToBeCheck: Pin?) {
         if pinToBeCheck != nil {
             let bbox = bboxString(latitude: (pinToBeCheck?.latitude)!, longitude: (pinToBeCheck?.longitude)!)
@@ -105,7 +100,8 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
                         do {
                             // Build Photo Model Object, no need to assign it
                             let data = try Data(contentsOf: URL(string: imageURL)!)
-                            _ = Photo(imageData: data as NSData, context: self.delegate.stack.context)
+                            let photoObject = Photo(imageData: data as NSData, context: self.delegate.stack.context)
+                            photoObject.pin = self.pin
                             self.arrayOfData?.append(data)
                         } catch {
                             fatalError("Error appending data element to array")

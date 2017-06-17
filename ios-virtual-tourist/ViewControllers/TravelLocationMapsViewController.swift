@@ -80,7 +80,6 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
                 arrayOfPins!.append(pin)
                 let annotation = MKPointAnnotation()
                 annotation.coordinate = CLLocationCoordinate2D(latitude: pin.latitude, longitude: pin.longitude)
-                print("Item with coordinates: \(annotation.coordinate)")
                 self.mapView.addAnnotation(annotation)
             }
         } catch {
@@ -166,6 +165,7 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
         var pinSelected: Pin?
         
         //Look for the matching selected pin in the tempArray
+        //FIXME: There should be a better way
         for pinView in arrayOfPins! {
             if pinView.latitude == view.annotation?.coordinate.latitude && pinView.longitude == view.annotation?.coordinate.longitude {
                 print("Found in core data")
@@ -198,6 +198,7 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
                 albumVC.fetchedResultsController = fc
                 // Pass the pin to associate the images with
                 albumVC.pin = pinEdit
+                albumVC.mapRegion = self.mapView.region
                 self.navigationController?.pushViewController(albumVC, animated: true)
             }
         }
