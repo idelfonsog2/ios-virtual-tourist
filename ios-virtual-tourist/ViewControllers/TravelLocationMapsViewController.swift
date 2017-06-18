@@ -127,7 +127,8 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
             pointAnnotation.coordinate = coord
 
             //Create the pin, it will store it in CoreData
-            _ = Pin(latitude: coord.latitude, longitude: coord.longitude, context: fetchedResultsController!.managedObjectContext)
+            let pinDropped = Pin(latitude: coord.latitude, longitude: coord.longitude, context: fetchedResultsController!.managedObjectContext)
+            self.arrayOfPins?.append(pinDropped)
             self.mapView.addAnnotation(pointAnnotation)
         }
     }

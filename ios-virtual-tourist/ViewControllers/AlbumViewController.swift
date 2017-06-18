@@ -15,7 +15,7 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
     // MARK: - Properties
     var pin: Pin?
     var arrayOfImages: [Photo]?
-    var arrayOfData: [Data]?
+    var imageUrlArray: [String]?
     var mapRegion: MKCoordinateRegion?
     let delegate = UIApplication.shared.delegate as! AppDelegate
     
@@ -28,87 +28,51 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
         super.viewDidLoad()
         self.collectionView.delegate = self
         self.collectionView.dataSource = self
-        self.initFetchRequestForPhoto()
     }
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        self.loadImages()
+        self.initFetchRequestForPhoto()
         self.loadPreviewMap()
     }
     
     // MARK: - AlbumViewController
+    func initFetchRequestForPhoto()  {
+        // Initialize an array of objects for the Photo Entity if any
+        do {
+            try fetchedResultsController?.performFetch()
+            arrayOfImages = try delegate.stack.context.fetch((fetchedResultsController?.fetchRequest)!) as? [Photo]
+            
+            // When no objects in the Coredata for Entity: Photos
+            // Download images url for that pin
+            if arrayOfImages?.count == 0 {
+                self.getFlickrImagesForPin(self.pin)
+            }
+        } catch {
+            fatalError("Unable to performFetch()")
+        }
+    }
     
     func loadPreviewMap() {
+        // Display the pin coordinates in the top map
         let annotation = MKPointAnnotation()
         annotation.coordinate = CLLocationCoordinate2D(latitude: pin!.latitude, longitude: pin!.longitude)
         self.mapView.setRegion(mapRegion!, animated: true)
         self.mapView.addAnnotation(annotation)
     }
-    
-    func loadImages() {
-        arrayOfData = []
-        do {
-            // Look for images in Database
-            let arrayOfPhotosModel = try delegate.stack.context.fetch((fetchedResultsController?.fetchRequest)!) as? [Photo]
-            
-            if arrayOfPhotosModel?.count != 0 {
-                for imageData in arrayOfPhotosModel! {
-                    arrayOfData?.append(imageData.imageData as! Data)
-                }
-            } else {
-                // download images from Flickr
-                self.getFlickrImagesForPin(self.pin)
-            }
-        } catch {
-            fatalError("Unable to retrieve images")
-        }
-    }
+  
 
-    
-    func initFetchRequestForPhoto()  {
-        // Create the stack
-        let delegate = UIApplication.shared.delegate as! AppDelegate
-        let stack = delegate.stack
-        
-        //Create the fetch request
-        let fr = NSFetchRequest<NSFetchRequestResult>(entityName: "Photo")
-        let urlDescriptor = NSSortDescriptor(key: "url", ascending: false)
-        fr.sortDescriptors = [urlDescriptor]
-        
-        //Create the fetch results controller
-        fetchedResultsController = NSFetchedResultsController(fetchRequest: fr, managedObjectContext: stack.context, sectionNameKeyPath: nil, cacheName: nil)
-        
-        do {
-            try fetchedResultsController?.performFetch()
-        } catch {
-            fatalError("Unable to performFetch()")
-        }
-    }
-
-    //FIXME: try to show images as per those already downloaded
     func getFlickrImagesForPin(_ pinToBeCheck: Pin?) {
+        // Gets an aray of 
         if pinToBeCheck != nil {
             let bbox = bboxString(latitude: (pinToBeCheck?.latitude)!, longitude: (pinToBeCheck?.longitude)!)
-            
+        
             FIClient().photoSearchFor(bbox: bbox, completionHandler: { (response, success) in
                 if !success {
                     print("Error downloading picture")
                 } else {
-                    let imageUrlArray = response as! [String]
-                    for imageURL in  imageUrlArray {
-                        do {
-                            // Build Photo Model Object, no need to assign it
-                            let data = try Data(contentsOf: URL(string: imageURL)!)
-                            let photoObject = Photo(imageData: data as NSData, context: self.delegate.stack.context)
-                            photoObject.pin = self.pin
-                            self.arrayOfData?.append(data)
-                        } catch {
-                            fatalError("Error appending data element to array")
-                        }
-                    }
-                    
-                    //After the imges have been downloaded
+                    // When download has finish save urls and reload collection view
+                    self.imageUrlArray = response as? [String]
                     DispatchQueue.main.async {
                         self.collectionView.reloadData()
                     }
@@ -141,13 +105,8 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
     }
     
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        
-        //Carefull with this statement the first condition will be evaluates
-        if arrayOfImages != nil{
-            return arrayOfImages!.count
-        } else {
-            return 10
-        }
+        // Udacity App contains 21 photos
+        return 21
     }
     
     // MARK: - UICollectionViewDelegate
@@ -157,13 +116,31 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
         
         cell.backgroundColor = UIColor.blue
         cell.activityIndicatorImageView.startAnimating()
-        
-        // DataReloaded to display images when they have finally downloaded
-        if arrayOfData != nil && arrayOfData?.count != 0 {
-            let photo = self.arrayOfData?[indexPath.row]
-            cell.imageView?.image = UIImage(data: photo!)
+    
+        // Use the CoreData to retrieve the images
+        if arrayOfImages?.count != 0 {
+            let photoObject = arrayOfImages?[indexPath.row]
+            cell.imageView?.image = UIImage(data: photoObject?.imageData! as! Data)
             cell.activityIndicatorImageView.stopAnimating()
             cell.activityIndicatorImageView.isHidden = true
+        } else {
+            // Donwload the images from Flickr
+            if let photoURLString = self.imageUrlArray?[indexPath.row] {
+                let photoURL = URL(string: photoURLString)!
+                do {
+                    let data = try Data(contentsOf: photoURL)
+                    let photoObject = Photo(imageData: data as NSData, url: photoURLString, context: self.delegate.stack.context)
+                    photoObject.pin = self.pin
+                    
+                    DispatchQueue.main.async {
+                        cell.imageView.image = UIImage(data: data)
+                        cell.activityIndicatorImageView.stopAnimating()
+                        cell.activityIndicatorImageView.isHidden = true
+                    }
+                } catch {
+                   fatalError("Not able to build the data based on the image url")
+                }
+            }
         }
         
         return cell
