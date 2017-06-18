@@ -123,7 +123,7 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
             cell.imageView?.image = UIImage(data: photoObject?.imageData! as! Data)
             cell.activityIndicatorImageView.stopAnimating()
             cell.activityIndicatorImageView.isHidden = true
-        } else {
+        } else if self.imageUrlArray?.count != 0 {
             // Donwload the images from Flickr
             if let photoURLString = self.imageUrlArray?[indexPath.row] {
                 let photoURL = URL(string: photoURLString)!

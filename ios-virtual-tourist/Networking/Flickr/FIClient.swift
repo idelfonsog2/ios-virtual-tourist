@@ -42,8 +42,8 @@ class FIClient: NSObject {
                 
                 var arrayOfUrlImages: [String] = []
                 
-                // Only get 10, it was not specify how many
-                for index in 0 ..< 10 {
+                // Only get 21, it was not specify how many
+                for index in 0 ..< 21 {
                     let photo = photoArrayDictionary[index]
                     
                     guard let imageUrlString = photo[ResponseKeys.UrlM] as? String else {
