@@ -146,8 +146,7 @@
                                     </collectionView>
                                     <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="rkD-bo-YvI">
                                         <rect key="frame" x="0.0" y="437" width="375" height="30"/>
-                                        <fontDescription key="fontDescription" type="system" pointSize="24"/>
-                                        <state key="normal" title="New Collection"/>
+                                        <fontDescription key="fontDescription" type="system" pointSize="17"/>
                                         <connections>
                                             <action selector="newCollectionButtonPressed:" destination="IdE-sq-gRr" eventType="touchUpInside" id="hPe-qx-NX4"/>
                                         </connections>

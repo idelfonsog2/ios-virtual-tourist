@@ -39,7 +39,9 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
         super.viewWillAppear(animated)
         self.initFetchRequestForPhoto()
         self.loadPreviewMap()
+        self.photosToBeDeleted = []
         UserDefaults.standard.set(false, forKey: kEditingPhotos)
+        self.newCollectionButton.setTitle("New collection", for: .normal)
     }
     
     // MARK: - AlbumViewController
@@ -49,7 +51,7 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
             try fetchedResultsController?.performFetch()
             arrayOfImages = try delegate.stack.context.fetch((fetchedResultsController?.fetchRequest)!) as? [Photo]
             
-            // IF none, download from flickr
+            // IF none, download 21 images from flickr
             if arrayOfImages?.count == 0 {
                 self.getFlickrImages(21, for: self.pin)
             } else {
@@ -73,17 +75,23 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
     }
   
     func removeSelectedPhotos() {
+        let photosSelected =  self.collectionView.indexPathsForSelectedItems
+        
+        for i in photosSelected! {
+            self.arrayOfImages?.remove(at: i.row)
+        }
+        
+        // Delete selected photos
         for photo in photosToBeDeleted! {
             Photo.deletePhoto(photo: photo, context: delegate.stack.context)
         }
-        //TODO: refresh collection view data
-        self.initFetchRequestForPhoto()
-        self.collectionView.reloadData()
         
+       
+        UserDefaults.standard.set(false, forKey: kEditingPhotos)
     }
 
     func getFlickrImages(_ number: Int, for pin: Pin?) {
-        // Gets an array of 
+        // Gets an array of
         if pin != nil {
             let bbox = bboxString(latitude: (pin?.latitude)!, longitude: (pin?.longitude)!)
         
@@ -132,7 +140,11 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
     // MARK: - IBActions
     @IBAction func newCollectionButtonPressed(_ sender: UIButton) {
         if UserDefaults.standard.bool(forKey: kEditingPhotos) {
+            // 1. Remove photos from Coredata
             removeSelectedPhotos()
+            // 2. Change the UI
+            self.newCollectionButton.setTitle("New Collection", for: .normal)
+            self.collectionView.reloadData()
         } else {
             self.getFlickrImages(21, for: self.pin)
         }
@@ -160,30 +172,39 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
         
         // Use the CoreData to retrieve the images
         if arrayOfImages?.count != 0 {
-            let photoObject = arrayOfImages?[indexPath.row]
-            cell.imageView?.image = UIImage(data: photoObject?.imageData! as! Data)
-            cell.activityIndicatorImageView.stopAnimating()
-            cell.activityIndicatorImageView.isHidden = true
+            if let photoObject = arrayOfImages?[indexPath.row] {
+                cell.imageView?.image = UIImage(data: photoObject.imageData! as! Data)
+                cell.activityIndicatorImageView.stopAnimating()
+                cell.activityIndicatorImageView.isHidden = true
+            } else {
+                // The photo was deleted, but the space allocated still exist
+                // test: remove the allocated space
+                self.arrayOfImages?.remove(at: indexPath.row)
+            }
+            
         }
         return cell
     }
     
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-        if self.photosToBeDeleted != nil || self.photosToBeDeleted?.count == 0 {
-            // IF there are not photos
-            newCollectionButton.titleLabel?.text = "New collection"
-        } else {
-            newCollectionButton.titleLabel?.text = "Remove Selected Pictures"
+            self.newCollectionButton.setTitle("Remove Selected Pictures", for: .normal)
             let cell = self.collectionView.cellForItem(at: indexPath) as! FlickrImageCollectionViewCell
             cell.selectedBackgroundView?.alpha = 0.5
             cell.imageView.alpha = 0.2
             let selectedPhoto = self.arrayOfImages?[indexPath.row]
             self.photosToBeDeleted?.append(selectedPhoto!)
-
-        }
+            UserDefaults.standard.set(true, forKey: kEditingPhotos)
     }
     
     func collectionView(_ collectionView: UICollectionView, didDeselectItemAt indexPath: IndexPath) {
-        <#code#>
+        let cell = self.collectionView.cellForItem(at: indexPath) as! FlickrImageCollectionViewCell
+        cell.selectedBackgroundView?.alpha = 1
+        cell.imageView.alpha = 1
+        self.photosToBeDeleted?.remove(at: indexPath.row)
+        
+        // UI: if all photos deselected
+        if self.photosToBeDeleted?.count == 0 {
+            self.newCollectionButton.setTitle("New collection", for: .normal)
+        }
     }
 }
