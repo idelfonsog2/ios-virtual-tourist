@@ -14,7 +14,7 @@ class FIClient: NSObject {
      @params coordinates for the region of a pin
      @returns array of url images
      */
-    func photoSearchFor(bbox: String, completionHandler: @escaping(_ response: Any?, _ succes: Bool) -> Void) {
+    func photoSearchFor(bbox: String, thisMany: Int, completionHandler: @escaping(_ response: Any?, _ succes: Bool) -> Void) {
         let params: [String: Any] = [
             ParameterKeys.API: Flickr.ApiKeyValue,
             ParameterKeys.MethodKey: Method.SearchPhotos,
@@ -42,8 +42,7 @@ class FIClient: NSObject {
                 
                 var arrayOfUrlImages: [String] = []
                 
-                // Only get 21, it was not specify how many
-                for index in 0 ..< 21 {
+                for index in 0 ..< thisMany {
                     let photo = photoArrayDictionary[index]
                     
                     guard let imageUrlString = photo[ResponseKeys.UrlM] as? String else {

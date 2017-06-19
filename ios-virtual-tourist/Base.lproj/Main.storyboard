@@ -46,6 +46,7 @@
                     </view>
                     <navigationItem key="navigationItem" id="rUd-XI-S0v" customClass="Album"/>
                     <connections>
+                        <outlet property="bannerDeleteView" destination="d11-Jy-aaz" id="G9l-Ka-7pK"/>
                         <outlet property="longPress" destination="bjz-Yk-3Xq" id="FEL-08-Bpb"/>
                         <outlet property="mapView" destination="8VU-oY-Igy" id="aOw-5M-Ycx"/>
                     </connections>
@@ -56,6 +57,25 @@
                         <action selector="dropPinButton:" destination="BYZ-38-t0r" id="obe-YL-HCi"/>
                     </connections>
                 </pongPressGestureRecognizer>
+                <view contentMode="scaleToFill" id="d11-Jy-aaz">
+                    <rect key="frame" x="0.0" y="0.0" width="376" height="51"/>
+                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                    <subviews>
+                        <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Tap to delete pins" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="Jow-0S-eZ2">
+                            <rect key="frame" x="90" y="15" width="196" height="21"/>
+                            <fontDescription key="fontDescription" type="system" pointSize="24"/>
+                            <color key="textColor" red="0.99797867194692924" green="1" blue="0.97983850238256243" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                            <nil key="highlightedColor"/>
+                        </label>
+                    </subviews>
+                    <color key="backgroundColor" red="0.79607843140000001" green="0.0" blue="0.0" alpha="1" colorSpace="calibratedRGB"/>
+                    <constraints>
+                        <constraint firstItem="Jow-0S-eZ2" firstAttribute="leading" secondItem="d11-Jy-aaz" secondAttribute="leading" constant="90" id="6PN-Ls-9nN"/>
+                        <constraint firstItem="Jow-0S-eZ2" firstAttribute="top" secondItem="d11-Jy-aaz" secondAttribute="top" constant="15" id="I6t-4Z-8Da"/>
+                        <constraint firstAttribute="bottom" secondItem="Jow-0S-eZ2" secondAttribute="bottom" constant="15" id="dBu-Be-dZw"/>
+                        <constraint firstAttribute="trailing" secondItem="Jow-0S-eZ2" secondAttribute="trailing" constant="90" id="ezG-KE-rfu"/>
+                    </constraints>
+                </view>
             </objects>
             <point key="canvasLocation" x="473" y="117"/>
         </scene>
@@ -150,6 +170,7 @@
                     <connections>
                         <outlet property="collectionView" destination="JhJ-RM-mZk" id="2g9-VN-dxK"/>
                         <outlet property="mapView" destination="iPV-C2-k2c" id="gai-OL-UnD"/>
+                        <outlet property="newCollectionButton" destination="rkD-bo-YvI" id="HBj-ht-UCx"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="1Fo-Mh-raA" userLabel="First Responder" sceneMemberID="firstResponder"/>

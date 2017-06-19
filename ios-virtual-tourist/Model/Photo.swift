@@ -19,4 +19,13 @@ public class Photo: NSManagedObject {
             fatalError("Unable to find entity name")
         }
     }
+    
+    static func deletePhoto(photo: Photo, context: NSManagedObjectContext) {
+        context.delete(photo)
+        do {
+            try context.save()
+        } catch {
+            fatalError("Unable to delete photo from CoreData")
+        }
+    }
 }

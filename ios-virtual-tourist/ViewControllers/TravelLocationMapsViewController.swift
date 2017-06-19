@@ -22,6 +22,7 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
     // MARK: - IBOutlets
     @IBOutlet weak var mapView: MKMapView!
     @IBOutlet var longPress: UILongPressGestureRecognizer!
+    @IBOutlet var bannerDeleteView: UIView!
     
     // MARK: - App Life Cycle
     override func viewDidLoad() {
@@ -107,10 +108,15 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
             UserDefaults.standard.set(true, forKey: kEditModeOn)
             self.editButton?.title = "DONE"
             //TODO: Show botton banner indicating that its in edit mode
+            //self.mapView.frame.origin.y = 60 * -1
+            self.bannerDeleteView.frame.origin.y = self.mapView.frame.maxY // size of the banner view
+            self.view.addSubview(bannerDeleteView)
         } else {
             self.editButton?.title = "EDIT"
             UserDefaults.standard.set(false, forKey: kEditModeOn)
             //TODO: Hide button banner
+            //self.mapView.frame.origin.y = 0
+            self.bannerDeleteView.removeFromSuperview()
         }
     }
     
