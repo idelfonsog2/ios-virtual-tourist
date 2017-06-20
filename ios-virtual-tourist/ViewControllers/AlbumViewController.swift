@@ -81,11 +81,13 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
             self.arrayOfImages?.remove(at: i.row)
         }
         
+        
         // Delete selected photos
         for photo in photosToBeDeleted! {
             Photo.deletePhoto(photo: photo, context: delegate.stack.context)
         }
         
+        //FIXME: remove item from the collection view
        
         UserDefaults.standard.set(false, forKey: kEditingPhotos)
     }
@@ -140,7 +142,6 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
 
     // MARK: - UICollectionViewDataSource
     func numberOfSections(in collectionView: UICollectionView) -> Int {
-        //FIXME: Leave it alone
         return 1
     }
     
@@ -218,4 +219,6 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
             self.newCollectionButton.setTitle("New collection", for: .normal)
         }
     }
+    
+    
 }
