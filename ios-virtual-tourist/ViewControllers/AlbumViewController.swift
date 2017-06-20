@@ -10,7 +10,8 @@ import UIKit
 import CoreData
 import MapKit
 
-let kEditingPhotos = "editingPhotos"
+let kEditingPhotos  = "editingPhotos"
+let kNewImages      = "newImages"
 
 class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UICollectionViewDataSource {
 
@@ -37,26 +38,34 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        self.newCollectionButton.setTitle("New collection", for: .normal)
+        
         self.initFetchRequestForPhoto()
         self.loadPreviewMap()
+        
         self.photosToBeDeleted = []
+        
         UserDefaults.standard.set(false, forKey: kEditingPhotos)
-        self.newCollectionButton.setTitle("New collection", for: .normal)
     }
     
     // MARK: - AlbumViewController
     func initFetchRequestForPhoto()  {
         do {
-            // Perform Fetch for the fetchResultsController
+            // Check if Photo objects exits
             try fetchedResultsController?.performFetch()
             arrayOfImages = try delegate.stack.context.fetch((fetchedResultsController?.fetchRequest)!) as? [Photo]
             
-            // IF none, download 21 images from flickr
             if arrayOfImages?.count == 0 {
+                // First time the pin is open, download 21 images
                 self.getFlickrImages(21, for: self.pin)
-            } else {
-                print("images found for selected pin")
+            
+            } else if arrayOfImages?.count == 21 {
+                // Indicate that photo objects were already appended it to the arrayOfImages
+                // For the rendering in cellForItemAtIndexPath func
+                UserDefaults.standard.set(false, forKey: kNewImages)
+                print("21 images found for selected pin")
             }
+            
         } catch {
             fatalError("Unable to performFetch()")
         }
@@ -75,20 +84,26 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
     }
   
     func removeSelectedPhotos() {
+        // Remove items from the collection view
         let photosSelected =  self.collectionView.indexPathsForSelectedItems
-        
+        self.collectionView.deleteItems(at: photosSelected!)
+
+        // Remove items from CoreData fetched Array
         for i in photosSelected! {
             self.arrayOfImages?.remove(at: i.row)
         }
         
         
-        // Delete selected photos
+        // Remove clean the temp array that holds photos for deletion
         for photo in photosToBeDeleted! {
             Photo.deletePhoto(photo: photo, context: delegate.stack.context)
         }
         
-        //FIXME: remove item from the collection view
-       
+        // Reload the number of items
+        self.collectionView.reloadData()
+        
+        // Use to indicate that the next rendering of the collectionView
+        // will be done using the CoraData fetched array
         UserDefaults.standard.set(false, forKey: kEditingPhotos)
     }
 
@@ -104,6 +119,7 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
                 } else {
                     // When download has finish save urls and reload collection view
                     self.imageUrlArray = response as? [String]
+                    UserDefaults.standard.set(true, forKey: kNewImages)
                     DispatchQueue.main.async {
                         self.collectionView.reloadData()
                     }
@@ -133,7 +149,6 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
             removeSelectedPhotos()
             // 2. Change the UI
             self.newCollectionButton.setTitle("New Collection", for: .normal)
-            self.collectionView.reloadData()
         } else {
             self.getFlickrImages(21, for: self.pin)
         }
@@ -146,13 +161,15 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
     }
     
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        // CoreData object count
-        if let arr = arrayOfImages, arr.count != 0 {
+        // Flickr images count
+        if let arr = self.imageUrlArray, arr.count != 0{
+            print("Flickr imageURLArray Object count \(arr.count)")
             return arr.count
         }
         
-        // Flickr images count
-        if let arr = self.imageUrlArray, arr.count != 0 {
+        // CoreData object count
+        if let arr = arrayOfImages, arr.count != 0  {
+            print("CoreData arrayOfImages Object count \(arr.count)")
             return arr.count
         } else {
             return 0
@@ -167,32 +184,32 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
         cell.backgroundColor = UIColor.blue
         cell.activityIndicatorImageView.startAnimating()
     
+        let newImages = UserDefaults.standard.bool(forKey: kNewImages)
         
-        // Use the CoreData to retrieve the images
-        if arrayOfImages?.count != 0 {
-            let photoObject = arrayOfImages?[indexPath.row]
-            print(photoObject)
-            cell.imageView?.image = UIImage(data: photoObject?.imageData! as! Data)
-            cell.activityIndicatorImageView.stopAnimating()
-            cell.activityIndicatorImageView.isHidden = true
-        } else {
-            
-            // Download images using the url
+        // Download images using the url
+        if newImages {
             let photoURLString = imageUrlArray?[indexPath.row]
-
+            
             FIClient().downloadImage(withURL: photoURLString!, completionHandler: { (data, success) in
                 
                 // Create Photo object in CoreData
                 let photoObject = Photo(imageData: data as! NSData, url: photoURLString!, context: self.delegate.stack.context)
                 
                 photoObject.pin = self.pin
-                
+                self.initFetchRequestForPhoto()
                 DispatchQueue.main.async {
                     cell.imageView?.image = UIImage(data: data as! Data)
                     cell.activityIndicatorImageView.stopAnimating()
                     cell.activityIndicatorImageView.isHidden = true
                 }
             })
+        } else {
+            // Use the CoreData to retrieve the images
+            let photoObject = arrayOfImages?[indexPath.row]
+            print(photoObject)
+            cell.imageView?.image = UIImage(data: photoObject?.imageData! as! Data)
+            cell.activityIndicatorImageView.stopAnimating()
+            cell.activityIndicatorImageView.isHidden = true
             
         }
         return cell
