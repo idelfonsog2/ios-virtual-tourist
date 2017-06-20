@@ -86,21 +86,22 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
     func removeSelectedPhotos() {
         // Remove items from the collection view
         let photosSelected =  self.collectionView.indexPathsForSelectedItems
-        self.collectionView.deleteItems(at: photosSelected!)
 
+        // Remove items from CoreData fetched Array
+        for photo in photosToBeDeleted! {
+            Photo.deletePhoto(photo: photo, context: delegate.stack.context)
+        }
+        
         // Remove items from CoreData fetched Array
         for i in photosSelected! {
             self.arrayOfImages?.remove(at: i.row)
         }
         
+        // Clear the photosToBeDeletedArray for next deletion round
+        self.photosToBeDeleted = []
         
-        // Remove clean the temp array that holds photos for deletion
-        for photo in photosToBeDeleted! {
-            Photo.deletePhoto(photo: photo, context: delegate.stack.context)
-        }
-        
-        // Reload the number of items
-        self.collectionView.reloadData()
+        // RELOAD the number of items and DELETE the item
+        self.collectionView.deleteItems(at: photosSelected!)
         
         // Use to indicate that the next rendering of the collectionView
         // will be done using the CoraData fetched array
