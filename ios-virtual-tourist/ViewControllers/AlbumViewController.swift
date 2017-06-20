@@ -18,7 +18,7 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
     var pin: Pin?
     var arrayOfImages: [Photo]?
     var photosToBeDeleted: [Photo]?
-    
+    var imageUrlArray: [String]?
     var mapRegion: MKCoordinateRegion?
     let delegate = UIApplication.shared.delegate as! AppDelegate
     
@@ -47,7 +47,7 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
     // MARK: - AlbumViewController
     func initFetchRequestForPhoto()  {
         do {
-            // Initialize an array of objects for the Photo Entity if any
+            // Perform Fetch for the fetchResultsController
             try fetchedResultsController?.performFetch()
             arrayOfImages = try delegate.stack.context.fetch((fetchedResultsController?.fetchRequest)!) as? [Photo]
             
@@ -97,26 +97,13 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
         
             FIClient().photoSearchFor(bbox: bbox, thisMany: number, completionHandler: { (response, success) in
                 if !success {
+                    print(response)
                     print("Error downloading picture")
                 } else {
                     // When download has finish save urls and reload collection view
-                    let imageUrlArray = response as? [String]
+                    self.imageUrlArray = response as? [String]
                     DispatchQueue.main.async {
                         self.collectionView.reloadData()
-                    }
-                    for photoURLString in imageUrlArray! {
-                        do {
-                            let data = try Data(contentsOf: URL(string: photoURLString)!)
-                            let photoObject = Photo(imageData: data as NSData, url: photoURLString, context: self.delegate.stack.context)
-                            photoObject.pin = self.pin
-                            self.arrayOfImages?.append(photoObject)
-                            
-                            DispatchQueue.main.async {
-                                self.collectionView.reloadData()
-                            }
-                        } catch {
-                            fatalError("asas")
-                        }
                     }
                 }
             })
@@ -158,8 +145,18 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
     }
     
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        // Udacity App contains 21 photos
-        return arrayOfImages?.count ?? 0
+        // CoreData object count
+        if let arr = arrayOfImages, arr.count != 0 {
+            return arr.count
+        }
+        
+        // Flickr images count
+        if let arr = self.imageUrlArray, arr.count != 0 {
+            return arr.count
+        } else {
+            return 0
+        }
+        
     }
     
     // MARK: - UICollectionViewDelegate
@@ -172,15 +169,29 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
         
         // Use the CoreData to retrieve the images
         if arrayOfImages?.count != 0 {
-            if let photoObject = arrayOfImages?[indexPath.row] {
-                cell.imageView?.image = UIImage(data: photoObject.imageData! as! Data)
-                cell.activityIndicatorImageView.stopAnimating()
-                cell.activityIndicatorImageView.isHidden = true
-            } else {
-                // The photo was deleted, but the space allocated still exist
-                // test: remove the allocated space
-                self.arrayOfImages?.remove(at: indexPath.row)
-            }
+            let photoObject = arrayOfImages?[indexPath.row]
+            print(photoObject)
+            cell.imageView?.image = UIImage(data: photoObject?.imageData! as! Data)
+            cell.activityIndicatorImageView.stopAnimating()
+            cell.activityIndicatorImageView.isHidden = true
+        } else {
+            
+            // Download images using the url
+            let photoURLString = imageUrlArray?[indexPath.row]
+
+            FIClient().downloadImage(withURL: photoURLString!, completionHandler: { (data, success) in
+                
+                // Create Photo object in CoreData
+                let photoObject = Photo(imageData: data as! NSData, url: photoURLString!, context: self.delegate.stack.context)
+                
+                photoObject.pin = self.pin
+                
+                DispatchQueue.main.async {
+                    cell.imageView?.image = UIImage(data: data as! Data)
+                    cell.activityIndicatorImageView.stopAnimating()
+                    cell.activityIndicatorImageView.isHidden = true
+                }
+            })
             
         }
         return cell

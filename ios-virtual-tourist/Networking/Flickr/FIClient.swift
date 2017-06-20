@@ -62,6 +62,27 @@ class FIClient: NSObject {
         }
     }
     
+    func downloadImage(withURL urlString: String, completionHandler: @escaping(_ response: Any, _ success: Bool) -> Void) {
+        
+        let url = URL(string: urlString)!
+        let task = URLSession.shared.dataTask(with: url) { (data, response, error) in
+            guard error == nil else {
+                print("error retrieving image")
+                return
+            }
+            
+            guard let data = data else  {
+                return
+            }
+            
+            completionHandler(data, true)
+
+        }
+        
+        task.resume()
+    }
+    
+    
     func urlFromParams(params: [String: Any]) -> URL {
         var components = URLComponents()
         components.scheme = Flickr.scheme
