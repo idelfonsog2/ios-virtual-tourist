@@ -13,7 +13,7 @@ import MapKit
 let kEditingPhotos  = "editingPhotos"
 let kNewImages      = "newImages"
 
-class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UICollectionViewDataSource {
+class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UICollectionViewDataSource, NSFetchedResultsControllerDelegate {
 
     // MARK: - Properties
     var pin: Pin?
@@ -21,6 +21,7 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
     var imageUrlArray: [String]?
     var mapRegion: MKCoordinateRegion?
     let delegate = UIApplication.shared.delegate as! AppDelegate
+    var blockOperation: BlockOperation?
     private var flickrImagesPresent: Bool?
     
     // MARK: - IBOutlets
@@ -31,6 +32,7 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
     // MARK: - App Life Cycle
     override func viewDidLoad() {
         super.viewDidLoad()
+        self.fetchedResultsController?.delegate = self
         self.collectionView.delegate = self
         self.collectionView.dataSource = self
         self.collectionView.allowsMultipleSelection = true
@@ -79,25 +81,6 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
         self.mapView.addAnnotation(annotation)
     }
   
-    func removeSelectedPhotos() {
-        // Remove items from the collection view
-        let photosSelected =  self.collectionView.indexPathsForSelectedItems
-
-        // Remove items from CoreData fetchedObjects
-        for photo in photosToBeDeleted! {
-            Photo.deletePhoto(photo: photo, context: delegate.stack.context)
-        }
-        
-        // Clear the photosToBeDeletedArray for next deletion iteration
-        self.photosToBeDeleted = []
-        
-        // RELOAD the number of items and DELETE the item
-        self.collectionView.deleteItems(at: photosSelected!)
-        
-        // The next rendering of the collectionView
-        // will be done using the CoraData fetched array
-        UserDefaults.standard.set(false, forKey: kEditingPhotos)
-    }
 
     func getFlickrImages(_ number: Int, for pin: Pin?) {
         // Gets an array of
@@ -147,6 +130,33 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
         } else {
             return "0,0,0,0"
         }
+    }
+    
+    func removeSelectedPhotos() {
+        // Remove items from the collection view
+        let photosSelected =  self.collectionView.indexPathsForSelectedItems
+        
+        for index in photosSelected! {
+            let cell = self.collectionView.cellForItem(at: index) as! FlickrImageCollectionViewCell
+            cell.selectedBackgroundView?.alpha = 1
+            cell.imageView.alpha = 1
+        }
+        
+        // Remove items from CoreData fetchedObjects
+        for photo in photosToBeDeleted! {
+
+            Photo.deletePhoto(photo: photo, context: delegate.stack.context)
+        }
+        
+        // Clear the photosToBeDeletedArray for next deletion iteration
+        self.photosToBeDeleted = []
+        
+        // RELOAD the number of items and DELETE the item
+        //self.collectionView.deleteItems(at: photosSelected!)
+        
+        // The next rendering of the collectionView
+        // will be done using the CoraData fetched array
+        UserDefaults.standard.set(false, forKey: kEditingPhotos)
     }
     
     // MARK: - IBActions
@@ -229,15 +239,43 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
         let cell = self.collectionView.cellForItem(at: indexPath) as! FlickrImageCollectionViewCell
         cell.selectedBackgroundView?.alpha = 1
         cell.imageView.alpha = 1
-        self.photosToBeDeleted?.remove(at: indexPath.row)
+        self.photosToBeDeleted?.remove(at: indexPath.row - 1)
         
         // UI: if all photos deselected
         if self.photosToBeDeleted?.count == 0 {
             self.newCollectionButton.setTitle("New collection", for: .normal)
         }
     }
+    
+    // MARK: - NSFetchedResultsControlleer
+    func controllerWillChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
+        self.blockOperation = BlockOperation()
+    }
+    
+    func controller(_ controller: NSFetchedResultsController<NSFetchRequestResult>, didChange anObject: Any, at indexPath: IndexPath?, for type: NSFetchedResultsChangeType, newIndexPath: IndexPath?) {
+        switch type {
+        case .insert:
+            self.blockOperation?.addExecutionBlock {
+                self.collectionView.insertItems(at: [newIndexPath!])
+            }
+            break
+        case .delete:
+            self.blockOperation?.addExecutionBlock {
+                self.collectionView.deleteItems(at: self.collectionView.indexPathsForSelectedItems!)
+            }
+            break
+        default:
+            print("Nothing")
+        }
+    }
+    
+    func controllerDidChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
+        self.collectionView.performBatchUpdates({ 
+            self.blockOperation?.start()
+        }) { (completed) in
+            print("done executing blockOperation whorray")
+        }
+    }
 }
 
-extension AlbumViewController: NSFetchedResultsControllerDelegate {
-    
-}
+
