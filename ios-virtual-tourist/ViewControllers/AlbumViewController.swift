@@ -21,7 +21,7 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
     var imageUrlArray: [String]?
     var mapRegion: MKCoordinateRegion?
     let delegate = UIApplication.shared.delegate as! AppDelegate
-    var blockOperation: BlockOperation?
+    var blockOperation: [BlockOperation]?
     private var flickrImagesPresent: Bool?
     
     // MARK: - IBOutlets
@@ -134,13 +134,7 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
     
     func removeSelectedPhotos() {
         // Remove items from the collection view
-        let photosSelected =  self.collectionView.indexPathsForSelectedItems
-        
-        for index in photosSelected! {
-            let cell = self.collectionView.cellForItem(at: index) as! FlickrImageCollectionViewCell
-            cell.selectedBackgroundView?.alpha = 1
-            cell.imageView.alpha = 1
-        }
+        //let photosSelected =  self.collectionView.indexPathsForSelectedItems
         
         // Remove items from CoreData fetchedObjects
         for photo in photosToBeDeleted! {
@@ -171,19 +165,12 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
         }
     }
     
-
-    // MARK: - UICollectionViewDataSource
-    func numberOfSections(in collectionView: UICollectionView) -> Int {
-        return 1
-    }
-    
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        
-        if let count = fetchedResultsController?.sections?[section].numberOfObjects, count != 0 {
+
+        if let count = fetchedResultsController?.sections?[section].numberOfObjects {
             return count
-        } else {
-            return 21
         }
+        return 0
     }
     
     // MARK: - UICollectionViewDelegate
@@ -235,34 +222,34 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
             UserDefaults.standard.set(true, forKey: kEditingPhotos)
     }
     
-    func collectionView(_ collectionView: UICollectionView, didDeselectItemAt indexPath: IndexPath) {
-        let cell = self.collectionView.cellForItem(at: indexPath) as! FlickrImageCollectionViewCell
-        cell.selectedBackgroundView?.alpha = 1
-        cell.imageView.alpha = 1
-        self.photosToBeDeleted?.remove(at: indexPath.row - 1)
-        
-        // UI: if all photos deselected
-        if self.photosToBeDeleted?.count == 0 {
-            self.newCollectionButton.setTitle("New collection", for: .normal)
-        }
-    }
+//    func collectionView(_ collectionView: UICollectionView, didDeselectItemAt indexPath: IndexPath) {
+//        let cell = self.collectionView.cellForItem(at: indexPath) as! FlickrImageCollectionViewCell
+//        cell.selectedBackgroundView?.alpha = 1
+//        cell.imageView.alpha = 1
+//        self.photosToBeDeleted?.remove(at: indexPath.row - 1)
+//        
+//        // UI: if all photos deselected
+//        if self.photosToBeDeleted?.count == 0 {
+//            self.newCollectionButton.setTitle("New collection", for: .normal)
+//        }
+//    }
     
     // MARK: - NSFetchedResultsControlleer
     func controllerWillChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
-        self.blockOperation = BlockOperation()
+        self.blockOperation = [BlockOperation]()
     }
     
     func controller(_ controller: NSFetchedResultsController<NSFetchRequestResult>, didChange anObject: Any, at indexPath: IndexPath?, for type: NSFetchedResultsChangeType, newIndexPath: IndexPath?) {
         switch type {
         case .insert:
-            self.blockOperation?.addExecutionBlock {
+            self.blockOperation?.append(BlockOperation(block: { 
                 self.collectionView.insertItems(at: [newIndexPath!])
-            }
+            }))
             break
         case .delete:
-            self.blockOperation?.addExecutionBlock {
+            self.blockOperation?.append(BlockOperation(block: { 
                 self.collectionView.deleteItems(at: self.collectionView.indexPathsForSelectedItems!)
-            }
+            }))
             break
         default:
             print("Nothing")
@@ -270,8 +257,11 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
     }
     
     func controllerDidChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
-        self.collectionView.performBatchUpdates({ 
-            self.blockOperation?.start()
+        self.collectionView.performBatchUpdates({
+            
+            for operation in self.blockOperation! {
+                operation.start()
+            }
         }) { (completed) in
             print("done executing blockOperation whorray")
         }
