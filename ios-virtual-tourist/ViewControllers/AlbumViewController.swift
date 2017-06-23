@@ -185,10 +185,6 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
         
         cell.backgroundColor = UIColor.blue
         cell.activityIndicatorImageView.startAnimating()
-        
-        if !self.flickrImagesPresent! && fetchedResultsController?.fetchedObjects?.count == 0 {
-            return cell
-        }
 
         // Download images using the url
         
