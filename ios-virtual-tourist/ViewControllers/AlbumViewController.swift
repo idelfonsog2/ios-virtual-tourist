@@ -88,9 +88,9 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
         let photosSelected =  self.collectionView.indexPathsForSelectedItems
 
         // Remove items from CoreData fetched Array
-        for photo in photosToBeDeleted! {
-            Photo.deletePhoto(photo: photo, context: delegate.stack.context)
-        }
+        //for photo in photosToBeDeleted! {
+          //  Photo.deletePhoto(photo: photo, context: delegate.stack.context)
+        //}
         
         // Remove items from CoreData fetched Array
         for i in photosSelected! {
@@ -98,7 +98,7 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
         }
         
         // Clear the photosToBeDeletedArray for next deletion round
-        self.photosToBeDeleted = []
+        //self.photosToBeDeleted = []
         
         // RELOAD the number of items and DELETE the item
         self.collectionView.deleteItems(at: photosSelected!)
@@ -146,26 +146,33 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
     // MARK: - IBActions
     @IBAction func newCollectionButtonPressed(_ sender: UIButton) {
         if UserDefaults.standard.bool(forKey: kEditingPhotos) {
-            // 1. Remove photos from Coredata
-            removeSelectedPhotos()
-            // 2. Change the UI
+            //removeSelectedPhotos()
+            
+            // Perform DELETE in the photo object (Photo Class)
+            // Remove selected items from the collection view
+            let photosSelected =  self.collectionView.indexPathsForSelectedItems
+            
+            for index in photosSelected! {
+                let x = fetchedResultsController?.object(at: index) as! Photo
+                Photo.deletePhoto(photo: x, context: delegate.stack.context)
+            }
             self.newCollectionButton.setTitle("New Collection", for: .normal)
         } else {
-            self.getFlickrImages(21, for: self.pin)
+            
+            // TODO: delete the 21 images
+            // TODO: get new set of images
+            
+            //self.getFlickrImages(21, for: self.pin)
         }
     }
     
 
     // MARK: - UICollectionViewDataSource
-    func numberOfSections(in collectionView: UICollectionView) -> Int {
-        return 1
-    }
-    
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         // Flickr images count
-        if let arr = self.imageUrlArray, arr.count != 0{
-            print("Flickr imageURLArray Object count \(arr.count)")
-            return arr.count
+        if let flickrImagesArray = self.imageUrlArray, flickrImagesArray.count != 0{
+            print("Flickr imageURLArray Object count \(flickrImagesArray.count)")
+            return flickrImagesArray.count
         }
         
         // CoreData object count
