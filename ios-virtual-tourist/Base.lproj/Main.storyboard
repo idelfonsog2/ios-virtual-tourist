@@ -180,7 +180,7 @@
         <scene sceneID="VRZ-Pg-riQ">
             <objects>
                 <navigationController id="2Zd-bM-Imj" sceneMemberID="viewController">
-                    <navigationBar key="navigationBar" contentMode="scaleToFill" id="jwd-C2-YPK">
+                    <navigationBar key="navigationBar" contentMode="scaleToFill" misplaced="YES" id="jwd-C2-YPK">
                         <rect key="frame" x="0.0" y="0.0" width="375" height="44"/>
                         <autoresizingMask key="autoresizingMask"/>
                     </navigationBar>

@@ -262,12 +262,17 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
             }))
             break
         case .delete:
-            // The destination path for the object for insertions or moves (this value is nil for a deletion).
+            // The destination path for the object for insertions or moves (this value is nil for a deletion)
+            self.blockOperation?.append(BlockOperation(block: {
+                self.collectionView.deleteItems(at: [indexPath!])
+            }))
+            
             self.blockOperation?.append(BlockOperation(block: {
                 if let itemsSelected = self.collectionView.indexPathsForSelectedItems {
                     self.collectionView.deleteItems(at: itemsSelected)
                 }
             }))
+            
             break
         default:
             print("Nothing")
@@ -275,8 +280,8 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
     }
     
     func controllerDidChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
+        
         self.collectionView.performBatchUpdates({
-            
             for operation in self.blockOperation! {
                 operation.start()
             }
@@ -284,6 +289,7 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
             print("done executing blockOperation whorray")
         }
     }
+    
 }
 
 
