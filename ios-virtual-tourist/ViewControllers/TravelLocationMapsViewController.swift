@@ -11,6 +11,7 @@ import MapKit
 import CoreLocation
 import CoreData
 
+let kFirstTimePinDropped = "pinDropped"
 class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegate, UINavigationControllerDelegate {
 
     // MARK: - Properties
@@ -124,9 +125,11 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
         if pin != nil {
             let bbox = bboxString(latitude: (pin?.latitude)!, longitude: (pin?.longitude)!)
             
+//            let photoObject = Photo(imageData: nil, url: nil, context: delegate.stack.context)
+//            photoObject.pin = pin
+            
             FIClient().photoSearchFor(bbox: bbox, thisMany: number, completionHandler: { (response, success) in
                 if !success {
-                    print(response)
                     print("Error downloading picture")
                 } else {
                     // When download has finish save urls and reload collection view
@@ -134,6 +137,8 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
                     for urlString in imageUrlArray! {
                         self.buildPhotoObject(with: urlString, pin: pin!)
                     }
+                    print("Done downloading")
+                    NotificationCenter.default.post(Notification(name: Notification.Name(rawValue: kFlickrImages)))
                 }
             })
         }
@@ -155,6 +160,8 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
         do {
             let url = URL(string: urlString)
             let data = try Data(contentsOf: url!)
+            
+            
             let photoObject = Photo(imageData: data as NSData, url: urlString, context: delegate.stack.context)
             photoObject.pin = pin
         } catch {
@@ -174,6 +181,8 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
             //Create the pin, it will store it in CoreData
             let pinDropped = Pin(latitude: coord.latitude, longitude: coord.longitude, context: fetchedResultsController!.managedObjectContext)
             self.getFlickrImages(21, for: pinDropped)
+            UserDefaults.standard.set(true, forKey: kFirstTimePinDropped)
+            
             self.arrayOfPins?.append(pinDropped)
             self.mapView.addAnnotation(pointAnnotation)
         }
@@ -215,7 +224,7 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
         //FIXME: There should be a better way
         for pinView in arrayOfPins! {
             if pinView.latitude == view.annotation?.coordinate.latitude && pinView.longitude == view.annotation?.coordinate.longitude {
-                print("Found in core data")
+                print("Pin found in ModelObject")
                 pinSelected = pinView
             }
         }
