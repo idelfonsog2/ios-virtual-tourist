@@ -1,4 +1,4 @@
-//
+    //
 //  AlbumViewController.swift
 //  ios-virtual-tourist
 //
@@ -21,7 +21,7 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
     var imageUrlArray: [String]?
     var mapRegion: MKCoordinateRegion?
     let delegate = UIApplication.shared.delegate as! AppDelegate
-    var blockOperation: [BlockOperation]?
+    var blockOperation: BlockOperation?
     private var flickrImagesPresent: Bool?
     
     // MARK: - IBOutlets
@@ -33,10 +33,23 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
     override func viewDidLoad() {
         super.viewDidLoad()
         self.loadData()
+        
+        let fr = NSFetchRequest<NSFetchRequestResult>(entityName: "Photo")
+        
+        fr.sortDescriptors = [NSSortDescriptor(key: "url", ascending: false), NSSortDescriptor(key: "imageData", ascending: false)]
+        
+        let pred = NSPredicate(format: "pin == %@", pin!)
+        
+        fr.predicate = pred
+        
+        // Create FetchedResultsController
+        _ = NSFetchedResultsController(fetchRequest: fr, managedObjectContext:delegate.stack.context, sectionNameKeyPath: nil, cacheName: nil)
+        
         self.fetchedResultsController?.delegate = self
         self.collectionView.delegate = self
         self.collectionView.dataSource = self
         self.collectionView.allowsMultipleSelection = true
+        
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -58,7 +71,6 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
     func loadData()  {
         do {
             // Perform Fetch base on the FetchRequest
-            try fetchedResultsController?.performFetch()
             let fetchedObject = try delegate.stack.context.fetch((fetchedResultsController?.fetchRequest)!) as? [Photo]
             
             // IF object let collectionViewDelegate cellFor...
@@ -67,7 +79,7 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
                 flickrImagesPresent = false
                 UserDefaults.standard.set(false, forKey: kFlickrImages)
             } else {
-                self.getFlickrImages(21, for: self.pin)
+                //self.getFlickrImages(21, for: self.pin)
             }
         } catch {
             fatalError("Unable to performFetch()")
@@ -83,44 +95,6 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
         self.mapView.addAnnotation(annotation)
     }
   
-
-    /*
-     @param coordinates of the pin from TravelLocationMapsViewController
-     @return url array of strings using the bbox param of the pin
-     */
-    func getFlickrImages(_ number: Int, for pin: Pin?) {
-        if pin != nil {
-            let bbox = bboxString(latitude: (pin?.latitude)!, longitude: (pin?.longitude)!)
-        
-            FIClient().photoSearchFor(bbox: bbox, thisMany: number, completionHandler: { (response, success) in
-                if !success {
-                    print(response)
-                    print("Error downloading picture")
-                } else {
-                    // When download has finish save urls and reload collection view
-                    self.imageUrlArray = response as? [String]
-                    self.loadData()
-                    //UserDefaults.standard.set(false, forKey: kFlickrImages)
-                    DispatchQueue.main.async {
-                        self.collectionView.reloadData()
-                    }
-                }
-            })
-        }
-    }
-    
-    
-    func bboxString(latitude: Double, longitude: Double) -> String {
-        if  latitude != 0 &&  longitude != 0 {
-            let minimumLon = max(longitude - Flickr.SearchBBoxHalfWidth, Flickr.SearchLonRange.0)
-            let minimumLat = max(latitude - Flickr.SearchBBoxHalfHeight, Flickr.SearchLatRange.0)
-            let maximumLon = min(longitude + Flickr.SearchBBoxHalfWidth, Flickr.SearchLonRange.1)
-            let maximumLat = min(latitude + Flickr.SearchBBoxHalfHeight, Flickr.SearchLatRange.1)
-            return "\(minimumLon),\(minimumLat),\(maximumLon),\(maximumLat)"
-        } else {
-            return "0,0,0,0"
-        }
-    }
     
     func removeSelectedPhotos() {
 
@@ -166,6 +140,10 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
     }
     
     // MARK: - UICollectionViewDelegate
+    func numberOfSections(in collectionView: UICollectionView) -> Int {
+        return 1
+    }
+    
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         
         // @return 21 to have that loading effet
@@ -250,28 +228,43 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
     
     // MARK: - NSFetchedResultsControlleer
     func controllerWillChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
-        self.blockOperation = [BlockOperation]()
+//        self.blockOperation = [BlockOperation]()
+        self.blockOperation = BlockOperation()
     }
     
     func controller(_ controller: NSFetchedResultsController<NSFetchRequestResult>, didChange anObject: Any, at indexPath: IndexPath?, for type: NSFetchedResultsChangeType, newIndexPath: IndexPath?) {
+        
+        //let object = anObject as! Photo
+        //print(object.url)
         switch type {
         case .insert:
             // The index path of the changed object (this value is nil for insertions)
-            self.blockOperation?.append(BlockOperation(block: { 
+//            self.blockOperation?.append(BlockOperation(block: { 
+//                self.collectionView.insertItems(at: [newIndexPath!])
+//            }))
+            self.blockOperation?.addExecutionBlock {
+                print(self.fetchedResultsController?.fetchedObjects?[(newIndexPath?.row)!] as! Photo)
                 self.collectionView.insertItems(at: [newIndexPath!])
-            }))
+            }
+            
             break
         case .delete:
             // The destination path for the object for insertions or moves (this value is nil for a deletion)
-            self.blockOperation?.append(BlockOperation(block: {
-                self.collectionView.deleteItems(at: [indexPath!])
-            }))
+//            self.blockOperation?.append(BlockOperation(block: {
+//                self.collectionView.deleteItems(at: [indexPath!])
+//            }))
             
-            self.blockOperation?.append(BlockOperation(block: {
+//            self.blockOperation?.append(BlockOperation(block: {
+//                if let itemsSelected = self.collectionView.indexPathsForSelectedItems {
+//                    self.collectionView.deleteItems(at: itemsSelected)
+//                }
+//            }))
+            
+            self.blockOperation?.addExecutionBlock {
                 if let itemsSelected = self.collectionView.indexPathsForSelectedItems {
                     self.collectionView.deleteItems(at: itemsSelected)
                 }
-            }))
+            }
             
             break
         default:
@@ -281,13 +274,11 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
     
     func controllerDidChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
         
-        self.collectionView.performBatchUpdates({
-            for operation in self.blockOperation! {
-                operation.start()
-            }
-        }) { (completed) in
-            print("done executing blockOperation whorray")
-        }
+//        self.collectionView.performBatchUpdates({
+//            self.blockOperation?.start()
+//        }) { (completed) in
+//            print("done executing blockOperation whorray")
+//        }
     }
     
 }

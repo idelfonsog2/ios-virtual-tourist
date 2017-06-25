@@ -119,9 +119,48 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
             self.bannerDeleteView.removeFromSuperview()
         }
     }
+
+    func getFlickrImages(_ number: Int, for pin: Pin?) {
+        if pin != nil {
+            let bbox = bboxString(latitude: (pin?.latitude)!, longitude: (pin?.longitude)!)
+            
+            FIClient().photoSearchFor(bbox: bbox, thisMany: number, completionHandler: { (response, success) in
+                if !success {
+                    print(response)
+                    print("Error downloading picture")
+                } else {
+                    // When download has finish save urls and reload collection view
+                    let imageUrlArray = response as? [String]
+                    for urlString in imageUrlArray! {
+                        self.buildPhotoObject(with: urlString, pin: pin!)
+                    }
+                }
+            })
+        }
+    }
+
+    func bboxString(latitude: Double, longitude: Double) -> String {
+        if  latitude != 0 &&  longitude != 0 {
+            let minimumLon = max(longitude - Flickr.SearchBBoxHalfWidth, Flickr.SearchLonRange.0)
+            let minimumLat = max(latitude - Flickr.SearchBBoxHalfHeight, Flickr.SearchLatRange.0)
+            let maximumLon = min(longitude + Flickr.SearchBBoxHalfWidth, Flickr.SearchLonRange.1)
+            let maximumLat = min(latitude + Flickr.SearchBBoxHalfHeight, Flickr.SearchLatRange.1)
+            return "\(minimumLon),\(minimumLat),\(maximumLon),\(maximumLat)"
+        } else {
+            return "0,0,0,0"
+        }
+    }
     
-
-
+    func buildPhotoObject(with urlString: String, pin: Pin) {
+        do {
+            let url = URL(string: urlString)
+            let data = try Data(contentsOf: url!)
+            let photoObject = Photo(imageData: data as NSData, url: urlString, context: delegate.stack.context)
+            photoObject.pin = pin
+        } catch {
+            fatalError("unable to build Photo Object")
+        }
+    }
     // MARK: - IBActions
     @IBAction func dropPinButton(_ sender: UILongPressGestureRecognizer) {
         
@@ -134,6 +173,7 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
 
             //Create the pin, it will store it in CoreData
             let pinDropped = Pin(latitude: coord.latitude, longitude: coord.longitude, context: fetchedResultsController!.managedObjectContext)
+            self.getFlickrImages(21, for: pinDropped)
             self.arrayOfPins?.append(pinDropped)
             self.mapView.addAnnotation(pointAnnotation)
         }
@@ -188,22 +228,7 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
                 self.mapView.removeAnnotation(view.annotation!)
             } else {
                 // View AlbumVC for the pin selected
-                
-                let fr = NSFetchRequest<NSFetchRequestResult>(entityName: "Photo")
-                
-                fr.sortDescriptors = [NSSortDescriptor(key: "url", ascending: false), NSSortDescriptor(key: "imageData", ascending: false)]
-                
-                let pred = NSPredicate(format: "pin == %@", pinSelected!)
-                
-                fr.predicate = pred
-                
-                // Create FetchedResultsController
-                let fc = NSFetchedResultsController(fetchRequest: fr, managedObjectContext:fetchedResultsController!.managedObjectContext, sectionNameKeyPath: nil, cacheName: nil)
-                
-                // Inject it into the notesVC
                 let albumVC = storyboard?.instantiateViewController(withIdentifier: "AlbumViewController") as! AlbumViewController
-                albumVC.fetchedResultsController = fc
-                // Pass the pin to associate the images with
                 albumVC.pin = pinEdit
                 albumVC.mapRegion = self.mapView.region
                 self.navigationController?.pushViewController(albumVC, animated: true)
