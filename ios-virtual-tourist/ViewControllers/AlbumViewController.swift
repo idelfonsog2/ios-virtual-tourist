@@ -18,7 +18,6 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
     // MARK: - Properties
     var pin: Pin?
     var photosToBeDeleted: [Photo]?
-    var imageUrlArray: [String]?
     var mapRegion: MKCoordinateRegion?
     let delegate = UIApplication.shared.delegate as! AppDelegate
     var blockOperation: BlockOperation?
@@ -32,19 +31,7 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
     // MARK: - App Life Cycle
     override func viewDidLoad() {
         super.viewDidLoad()
-        self.loadData()
-        
-        let fr = NSFetchRequest<NSFetchRequestResult>(entityName: "Photo")
-        
-        fr.sortDescriptors = [NSSortDescriptor(key: "url", ascending: false), NSSortDescriptor(key: "imageData", ascending: false)]
-        
-        let pred = NSPredicate(format: "pin == %@", pin!)
-        
-        fr.predicate = pred
-        
-        // Create FetchedResultsController
-        _ = NSFetchedResultsController(fetchRequest: fr, managedObjectContext:delegate.stack.context, sectionNameKeyPath: nil, cacheName: nil)
-        
+        self.initFetchRequestController()
         self.fetchedResultsController?.delegate = self
         self.collectionView.delegate = self
         self.collectionView.dataSource = self
@@ -57,9 +44,6 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
         self.newCollectionButton.setTitle("New collection", for: .normal)
         
         // Testing bool and UserDefault
-        self.flickrImagesPresent = false
-        UserDefaults.standard.set(false, forKey: kFlickrImages)
-        
         self.loadPreviewMap()
         
         self.photosToBeDeleted = []
@@ -68,21 +52,26 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
     }
     
     // MARK: - AlbumViewController
-    func loadData()  {
-        do {
-            // Perform Fetch base on the FetchRequest
-            let fetchedObject = try delegate.stack.context.fetch((fetchedResultsController?.fetchRequest)!) as? [Photo]
-            
-            // IF object let collectionViewDelegate cellFor...
-            // ELSE get urlImages and dataImages from Flickr network
-            if fetchedObject != nil && fetchedObject?.count != 0 {
-                flickrImagesPresent = false
-                UserDefaults.standard.set(false, forKey: kFlickrImages)
-            } else {
-                //self.getFlickrImages(21, for: self.pin)
-            }
-        } catch {
-            fatalError("Unable to performFetch()")
+    func initFetchRequestController()  {
+        let fr = NSFetchRequest<NSFetchRequestResult>(entityName: "Photo")
+        
+        fr.sortDescriptors = [NSSortDescriptor(key: "url", ascending: false), NSSortDescriptor(key: "imageData", ascending: false)]
+        
+        let pred = NSPredicate(format: "pin == %@", pin!)
+        
+        fr.predicate = pred
+        
+        // Create FetchedResultsController
+        fetchedResultsController = NSFetchedResultsController(fetchRequest: fr, managedObjectContext:delegate.stack.context, sectionNameKeyPath: nil, cacheName: nil)
+        
+        // IF object let collectionViewDelegate cellFor...
+        // ELSE get urlImages and dataImages from Flickr network
+        if fetchedResultsController?.fetchedObjects != nil &&
+            fetchedResultsController?.fetchedObjects?.count != 0 {
+            self.flickrImagesPresent = true
+            UserDefaults.standard.set(true, forKey: kFlickrImages)
+        } else {
+            //self.getFlickrImages(21, for: self.pin)
         }
     }
     
@@ -97,22 +86,6 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
   
     
     func removeSelectedPhotos() {
-
-        //TODO: Ignore comments from here on
-        // Remove items from CoreData fetchedObjects
-        //for photo in photosToBeDeleted! {
-
-          //  Photo.deletePhoto(photo: photo, context: delegate.stack.context)
-        //}
-        
-        // Clear the photosToBeDeletedArray for next deletion iteration
-        //self.photosToBeDeleted = []
-        
-        // RELOAD the number of items and DELETE the item
-        //self.collectionView.deleteItems(at: photosSelected!)
-        
-        // The next rendering of the collectionView
-        // will be done using the CoraData fetched array
         UserDefaults.standard.set(false, forKey: kEditingPhotos)
     }
     
@@ -145,13 +118,8 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
     }
     
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        
-        // @return 21 to have that loading effet
-        if fetchedResultsController?.sections?[0].numberOfObjects == 0 {
-            return 21
-        }
-        
-        // @return the cound of the fetched objects
+
+        // @return the count of the fetched objects
         if let count = fetchedResultsController?.sections?[0].numberOfObjects {
             return count
         }
@@ -167,21 +135,23 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
 
         // IF bool has not been set by the Flickr Network call
         //    RETURN CELL We have object from the entity
-        if !UserDefaults.standard.bool(forKey: kFlickrImages) {
+        if flickrImagesPresent! {
+            let photo = fetchedResultsController?.object(at: indexPath) as! Photo
+            cell.imageView?.image = UIImage(data: photo.imageData! as Data)
+            cell.activityIndicatorImageView.stopAnimating()
+            cell.activityIndicatorImageView.isHidden = true
             
+        } else {
             // IF the FlickNetwork call succeded  build the cell image,
             // ELSE return the cell with loading effect
-            if let photoURLString = imageUrlArray?[indexPath.row] {
+            let photoObject = fetchedResultsController?.object(at: indexPath) as! Photo
+            if let photoURLString = photoObject.url {
                 FIClient().downloadImage(withURL: photoURLString, completionHandler: {
                     (data, success) in
                     if !success {
                         cell.activityIndicatorImageView.stopAnimating()
                         cell.activityIndicatorImageView.isHidden = true
                     } else {
-                        // Create Photo object and insert it in CoreData (insertion happens in the Photo class)
-                        let photoObject = Photo(imageData: data as! NSData, url: photoURLString, context: self.delegate.stack.context)
-                        photoObject.pin = self.pin
-                        
                         DispatchQueue.main.async {
                             cell.imageView?.image = UIImage(data: data as! Data)
                             cell.activityIndicatorImageView.stopAnimating()
@@ -190,14 +160,7 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
                     }
                     
                 })
-            } else {
-                return cell
             }
-        } else {
-            let photo = fetchedResultsController?.object(at: indexPath) as! Photo
-            cell.imageView?.image = UIImage(data: photo.imageData! as Data)
-            cell.activityIndicatorImageView.stopAnimating()
-            cell.activityIndicatorImageView.isHidden = true
         }
         
         return cell
