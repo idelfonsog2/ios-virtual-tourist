@@ -1,4 +1,4 @@
-//
+    //
 //  AlbumViewController.swift
 //  ios-virtual-tourist
 //
@@ -11,17 +11,17 @@ import CoreData
 import MapKit
 
 let kEditingPhotos  = "editingPhotos"
-let kNewImages      = "newImages"
+let kFlickrImages   = "newImages"
+let kImagesSet      = "imagesSet"
 
-class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UICollectionViewDataSource {
+class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UICollectionViewDataSource, NSFetchedResultsControllerDelegate {
 
     // MARK: - Properties
     var pin: Pin?
-    var arrayOfImages: [Photo]?
-    var photosToBeDeleted: [Photo]?
-    var imageUrlArray: [String]?
     var mapRegion: MKCoordinateRegion?
     let delegate = UIApplication.shared.delegate as! AppDelegate
+    var blockOperation: [BlockOperation]? = [BlockOperation]()
+    private var flickrImagesPresent: Bool?
     
     // MARK: - IBOutlets
     @IBOutlet weak var collectionView: UICollectionView!
@@ -31,219 +31,199 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
     // MARK: - App Life Cycle
     override func viewDidLoad() {
         super.viewDidLoad()
+        self.initFetchRequestController()
+        self.fetchedResultsController?.delegate = self
         self.collectionView.delegate = self
         self.collectionView.dataSource = self
         self.collectionView.allowsMultipleSelection = true
+                
     }
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         self.newCollectionButton.setTitle("New collection", for: .normal)
         
-        self.initFetchRequestForPhoto()
+        // Testing bool and UserDefault
         self.loadPreviewMap()
-        
-        self.photosToBeDeleted = []
-        
         UserDefaults.standard.set(false, forKey: kEditingPhotos)
+        UserDefaults.standard.set(false, forKey: kImagesSet)
+    }
+    
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        // FLAG next time pin is tapped -> load images from coreData
+        UserDefaults.standard.set(false, forKey: kFirstTimePinDropped)
     }
     
     // MARK: - AlbumViewController
-    func initFetchRequestForPhoto()  {
-        do {
-            // Check if Photo objects exits
-            try fetchedResultsController?.performFetch()
-            arrayOfImages = try delegate.stack.context.fetch((fetchedResultsController?.fetchRequest)!) as? [Photo]
-            
-            if arrayOfImages?.count == 0 {
-                // First time the pin is open, download 21 images
-                self.getFlickrImages(21, for: self.pin)
-            
-            } else if arrayOfImages?.count == 21 {
-                // Indicate that photo objects were already appended it to the arrayOfImages
-                // For the rendering in cellForItemAtIndexPath func
-                UserDefaults.standard.set(false, forKey: kNewImages)
-                print("21 images found for selected pin")
-            }
-            
-        } catch {
-            fatalError("Unable to performFetch()")
-        }
-    }
-    
-    func checkStatusOfButton() {
+    func initFetchRequestController()  {
+        let fr = NSFetchRequest<NSFetchRequestResult>(entityName: "Photo")
         
+        fr.sortDescriptors = [NSSortDescriptor(key: "url", ascending: false), NSSortDescriptor(key: "imageData", ascending: false)]
+        
+        let pred = NSPredicate(format: "pin == %@", pin!)
+        
+        fr.predicate = pred
+        
+        // Create FetchedResultsController
+        fetchedResultsController = NSFetchedResultsController(fetchRequest: fr, managedObjectContext:delegate.stack.context, sectionNameKeyPath: nil, cacheName: nil)
     }
     
     func loadPreviewMap() {
-        // Display the pin coordinates in the top map
+        // Load small map with coordinates and region
         let annotation = MKPointAnnotation()
         annotation.coordinate = CLLocationCoordinate2D(latitude: pin!.latitude, longitude: pin!.longitude)
         self.mapView.setRegion(mapRegion!, animated: true)
         self.mapView.addAnnotation(annotation)
     }
-  
-    func removeSelectedPhotos() {
-        // Remove items from the collection view
-        let photosSelected =  self.collectionView.indexPathsForSelectedItems
-
-        // Remove items from CoreData fetched Array
-        //for photo in photosToBeDeleted! {
-          //  Photo.deletePhoto(photo: photo, context: delegate.stack.context)
-        //}
-        
-        // Remove items from CoreData fetched Array
-        for i in photosSelected! {
-            self.arrayOfImages?.remove(at: i.row)
-        }
-        
-        // Clear the photosToBeDeletedArray for next deletion round
-        //self.photosToBeDeleted = []
-        
-        // RELOAD the number of items and DELETE the item
-        self.collectionView.deleteItems(at: photosSelected!)
-        
-        // Use to indicate that the next rendering of the collectionView
-        // will be done using the CoraData fetched array
-        UserDefaults.standard.set(false, forKey: kEditingPhotos)
-    }
-
-    func getFlickrImages(_ number: Int, for pin: Pin?) {
-        // Gets an array of
-        if pin != nil {
-            let bbox = bboxString(latitude: (pin?.latitude)!, longitude: (pin?.longitude)!)
-        
-            FIClient().photoSearchFor(bbox: bbox, thisMany: number, completionHandler: { (response, success) in
-                if !success {
-                    print(response)
-                    print("Error downloading picture")
-                } else {
-                    // When download has finish save urls and reload collection view
-                    self.imageUrlArray = response as? [String]
-                    UserDefaults.standard.set(true, forKey: kNewImages)
-                    DispatchQueue.main.async {
-                        self.collectionView.reloadData()
-                    }
-                }
-            })
-        }
-    }
-    
-    
-    func bboxString(latitude: Double, longitude: Double) -> String {
-        // ensure bbox is bounded by minimum and maximums
-        if  latitude != 0 &&  longitude != 0 {
-            let minimumLon = max(longitude - Flickr.SearchBBoxHalfWidth, Flickr.SearchLonRange.0)
-            let minimumLat = max(latitude - Flickr.SearchBBoxHalfHeight, Flickr.SearchLatRange.0)
-            let maximumLon = min(longitude + Flickr.SearchBBoxHalfWidth, Flickr.SearchLonRange.1)
-            let maximumLat = min(latitude + Flickr.SearchBBoxHalfHeight, Flickr.SearchLatRange.1)
-            return "\(minimumLon),\(minimumLat),\(maximumLon),\(maximumLat)"
-        } else {
-            return "0,0,0,0"
-        }
-    }
     
     // MARK: - IBActions
     @IBAction func newCollectionButtonPressed(_ sender: UIButton) {
         if UserDefaults.standard.bool(forKey: kEditingPhotos) {
-            //removeSelectedPhotos()
-            
+
             // Perform DELETE in the photo object (Photo Class)
             // Remove selected items from the collection view
-            let photosSelected =  self.collectionView.indexPathsForSelectedItems
-            
-            for index in photosSelected! {
-                let x = fetchedResultsController?.object(at: index) as! Photo
-                Photo.deletePhoto(photo: x, context: delegate.stack.context)
+            let indexPaths =  self.collectionView.indexPathsForSelectedItems
+            for index in indexPaths! {
+                
+                // 1.
+                let photoToBeDeleted = fetchedResultsController?.object(at: index) as! Photo
+                Photo.deletePhoto(photo: photoToBeDeleted, context: delegate.stack.context)
+
+                // 2.
+                self.collectionView.deselectItem(at: index, animated: true)
+                
+                print("deleted cell: \(index)")
             }
+            
+            
+            print("selected cells after deletion: \(self.collectionView.indexPathsForSelectedItems)")
             self.newCollectionButton.setTitle("New Collection", for: .normal)
         } else {
             
             // TODO: delete the 21 images
             // TODO: get new set of images
+            for photo in (fetchedResultsController?.fetchedObjects)! {
+                Photo.deletePhoto(photo: photo as! Photo, context: delegate.stack.context)
+            }
             
-            //self.getFlickrImages(21, for: self.pin)
+            let travelLocationVC = storyboard?.instantiateViewController(withIdentifier: kTravelLocationMapsViewController) as! TravelLocationMapsViewController
+            travelLocationVC.getFlickrImages(21, for: self.pin, newImagesrRequested: true)
         }
-    }
-    
-
-    // MARK: - UICollectionViewDataSource
-    func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        // Flickr images count
-        if let flickrImagesArray = self.imageUrlArray, flickrImagesArray.count != 0{
-            print("Flickr imageURLArray Object count \(flickrImagesArray.count)")
-            return flickrImagesArray.count
-        }
-        
-        // CoreData object count
-        if let arr = arrayOfImages, arr.count != 0  {
-            print("CoreData arrayOfImages Object count \(arr.count)")
-            return arr.count
-        } else {
-            return 0
-        }
-        
     }
     
     // MARK: - UICollectionViewDelegate
+    func numberOfSections(in collectionView: UICollectionView) -> Int {
+        return 1
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
+        // RETURN the count of the fetched objects from the ModelObject
+        if let count = fetchedResultsController?.sections?[0].numberOfObjects {
+            return count            
+        }
+      return 0
+    }
+    
+    
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
-        let cell =  collectionView.dequeueReusableCell(withReuseIdentifier: "FlickrImageCollectionViewCell", for: indexPath) as! FlickrImageCollectionViewCell
+        let reuseIdentifier = "FlickrImageCollectionViewCell"
+        let cell =  collectionView.dequeueReusableCell(withReuseIdentifier: reuseIdentifier, for: indexPath) as! FlickrImageCollectionViewCell
         
         cell.backgroundColor = UIColor.blue
         cell.activityIndicatorImageView.startAnimating()
-    
-        let newImages = UserDefaults.standard.bool(forKey: kNewImages)
-        
-        // Download images using the url
-        if newImages {
-            let photoURLString = imageUrlArray?[indexPath.row]
-            
-            FIClient().downloadImage(withURL: photoURLString!, completionHandler: { (data, success) in
-                
-                // Create Photo object in CoreData
-                let photoObject = Photo(imageData: data as! NSData, url: photoURLString!, context: self.delegate.stack.context)
-                
-                photoObject.pin = self.pin
-                self.initFetchRequestForPhoto()
-                DispatchQueue.main.async {
-                    cell.imageView?.image = UIImage(data: data as! Data)
-                    cell.activityIndicatorImageView.stopAnimating()
-                    cell.activityIndicatorImageView.isHidden = true
-                }
-            })
-        } else {
-            // Use the CoreData to retrieve the images
-            let photoObject = arrayOfImages?[indexPath.row]
-            print(photoObject)
-            cell.imageView?.image = UIImage(data: photoObject?.imageData! as! Data)
+        cell.imageView.image = UIImage(named: "placeholderimage")
+        // IF bool has not been set by the Flickr Network call
+        //    RETURN CELL, We have object from the entity
+        if !UserDefaults.standard.bool(forKey: kFirstTimePinDropped) {
+            let photo = fetchedResultsController?.object(at: indexPath) as! Photo
+            cell.imageView?.image = UIImage(data: photo.imageData! as Data)
             cell.activityIndicatorImageView.stopAnimating()
             cell.activityIndicatorImageView.isHidden = true
             
-        }
+        } else {
+            // IF the FlickNetwork call succeded  build the cell image,
+            // ELSE return the cell with loading effect
+                if let photoObject = fetchedResultsController?.object(at: indexPath) as? Photo {
+                    FIClient().downloadImage(withURL: photoObject.url!, completionHandler: {
+                        (data, success) in
+                        if !success {
+                            cell.activityIndicatorImageView.stopAnimating()
+                            cell.activityIndicatorImageView.isHidden = true
+                        } else {
+                            DispatchQueue.main.async {
+                                cell.imageView?.image = UIImage(data: data as! Data)
+                                cell.backgroundColor = UIColor.white
+                                cell.activityIndicatorImageView.stopAnimating()
+                                cell.activityIndicatorImageView.isHidden = true
+                            }
+                        }
+                        
+                    })
+                }
+  
+            }
+        
         return cell
     }
     
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-            self.newCollectionButton.setTitle("Remove Selected Pictures", for: .normal)
-            let cell = self.collectionView.cellForItem(at: indexPath) as! FlickrImageCollectionViewCell
-            cell.selectedBackgroundView?.alpha = 0.5
-            cell.imageView.alpha = 0.2
-            let selectedPhoto = self.arrayOfImages?[indexPath.row]
-            self.photosToBeDeleted?.append(selectedPhoto!)
-            UserDefaults.standard.set(true, forKey: kEditingPhotos)
+        self.newCollectionButton.setTitle("Remove Selected Pictures", for: .normal)
+        
+        let cell = self.collectionView.cellForItem(at: indexPath) as! FlickrImageCollectionViewCell
+        
+        print("selected cells: \(indexPath.row)")
+        cell.imageView.alpha = 0.2
+        UserDefaults.standard.set(true, forKey: kEditingPhotos)
     }
     
     func collectionView(_ collectionView: UICollectionView, didDeselectItemAt indexPath: IndexPath) {
         let cell = self.collectionView.cellForItem(at: indexPath) as! FlickrImageCollectionViewCell
         cell.selectedBackgroundView?.alpha = 1
         cell.imageView.alpha = 1
-        self.photosToBeDeleted?.remove(at: indexPath.row)
-        
         // UI: if all photos deselected
-        if self.photosToBeDeleted?.count == 0 {
+        if self.collectionView.indexPathsForSelectedItems?.count == 0 {
+            UserDefaults.standard.set(false, forKey: kEditingPhotos)
             self.newCollectionButton.setTitle("New collection", for: .normal)
         }
     }
     
+    // MARK: - NSFetchedResultsControlleer
+    func controllerWillChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
+        self.blockOperation?.removeAll()
+    }
+    
+    func controller(_ controller: NSFetchedResultsController<NSFetchRequestResult>, didChange anObject: Any, at indexPath: IndexPath?, for type: NSFetchedResultsChangeType, newIndexPath: IndexPath?) {
+
+        switch type {
+        case .insert:
+            // The index path of the changed object (this value is nil for insertions)
+            self.blockOperation?.append(BlockOperation(block: { 
+                self.collectionView.insertItems(at: [newIndexPath!])
+            }))
+            
+            break
+        case .delete:
+            // The destination path for the object for insertions or moves (this value is nil for a deletion)
+            self.blockOperation?.append(BlockOperation(block: {
+                self.collectionView.deleteItems(at: [indexPath!])
+            }))
+            
+            break
+        default:
+            print("Nothing")
+        }
+    }
+    
+    func controllerDidChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
+        self.collectionView.performBatchUpdates({
+            for operation in self.blockOperation! {
+                operation.start()
+            }
+        }) { (completed) in
+        }
+    }
     
 }
+
+

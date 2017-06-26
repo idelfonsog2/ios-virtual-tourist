@@ -31,14 +31,15 @@
       "scale" : "3x"
     },
     {
-      "idiom" : "iphone",
       "size" : "60x60",
+      "idiom" : "iphone",
+      "filename" : "VirtualTourist_120.png",
       "scale" : "2x"
     },
     {
       "size" : "60x60",
       "idiom" : "iphone",
-      "filename" : "VirtualTourist_76-1.png",
+      "filename" : "VirtualTourist_180.png",
       "scale" : "3x"
     },
     {
@@ -78,8 +79,9 @@
       "scale" : "1x"
     },
     {
-      "idiom" : "ipad",
       "size" : "76x76",
+      "idiom" : "ipad",
+      "filename" : "VirtualTourist_152.png",
       "scale" : "2x"
     },
     {
