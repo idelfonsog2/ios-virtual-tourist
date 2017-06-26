@@ -76,7 +76,6 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
         self.mapView.setRegion(mapRegion!, animated: true)
         self.mapView.addAnnotation(annotation)
     }
-  
     
     // MARK: - IBActions
     @IBAction func newCollectionButtonPressed(_ sender: UIButton) {
@@ -121,10 +120,11 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         // RETURN the count of the fetched objects from the ModelObject
         if let count = fetchedResultsController?.sections?[0].numberOfObjects {
-            return count
+            return count            
         }
-        return 0
+      return 0
     }
+    
     
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let reuseIdentifier = "FlickrImageCollectionViewCell"
