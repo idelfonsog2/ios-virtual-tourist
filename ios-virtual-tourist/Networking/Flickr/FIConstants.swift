@@ -17,8 +17,8 @@ struct Flickr {
     
     static let baseUrl = ""
     
-    static let SearchBBoxHalfWidth = 1.0
-    static let SearchBBoxHalfHeight = 1.0
+    static let SearchBBoxHalfWidth = 0.5
+    static let SearchBBoxHalfHeight = 0.5
     static let SearchLatRange = (-90.0, 90.0)
     static let SearchLonRange = (-180.0, 180.0)
 }
@@ -29,10 +29,11 @@ struct ParameterKeys {
     static let Format       = "format"
     static let NonJSONCallBack = "nojsoncallback"
     static let Query        = "Query"
-    static let Latitude     = "latitude"
-    static let Longitude    = "longitude"
+    static let Latitude     = "lat"
+    static let Longitude    = "lon"
     static let Bbox         = "bbox"
     static let Extras       = "extras"
+    static let PlaceId      = "place_id"
 }
 
 struct ParameterValues {
@@ -44,6 +45,7 @@ struct ParameterValues {
 struct Method {
     static let PlacesFind   = "flickr.places.find"
     static let SearchPhotos = "flickr.photos.search"
+    static let FindByLatLon = "flickr.places.findByLatLon"
 }
 
 struct ResponseKeys {

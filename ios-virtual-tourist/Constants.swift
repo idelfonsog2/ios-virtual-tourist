@@ -19,3 +19,8 @@ let kLongitudeRegion        = "longitudeRegion"
 
 // MARK: - Notification Names
 let kCaptureCoordinates = "captureCoordinates"
+
+
+// MARK: - VC Identifiers
+let kTravelLocationMapsViewController = "TravelLocationMapsViewController"
+let kAlbumViewController = "AlbumViewController"

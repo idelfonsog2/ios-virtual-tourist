@@ -121,26 +121,37 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
         }
     }
 
-    func getFlickrImages(_ number: Int, for pin: Pin?) {
+    func getFlickrImages(_ number: Int, for pin: Pin?, newImagesrRequested: Bool) {
         if pin != nil {
             let bbox = bboxString(latitude: (pin?.latitude)!, longitude: (pin?.longitude)!)
             
-//            let photoObject = Photo(imageData: nil, url: nil, context: delegate.stack.context)
-//            photoObject.pin = pin
-            
-            FIClient().photoSearchFor(bbox: bbox, thisMany: number, completionHandler: { (response, success) in
+            FIClient().photoSearchFor(lat: (pin?.latitude)!, lon: (pin?.longitude)!, completionHandler: { (response, success) in
                 if !success {
-                    print("Error downloading picture")
+                    
                 } else {
-                    // When download has finish save urls and reload collection view
-                    let imageUrlArray = response as? [String]
-                    for urlString in imageUrlArray! {
-                        self.buildPhotoObject(with: urlString, pin: pin!)
-                    }
-                    print("Done downloading")
-                    NotificationCenter.default.post(Notification(name: Notification.Name(rawValue: kFlickrImages)))
+                    let placeId = response as! String
+                    print("place id \(response)")
+                    FIClient().photoSearchFor(bbox: bbox, placeId: placeId, thisMany: number, completionHandler: { (response, success) in
+                        if !success {
+                            print("Error downloading picture")
+                        } else {
+                            // When download has finish save urls and reload collection view
+                            let imageUrlArray = response as? [String]
+                            
+                            for i in 0 ..< imageUrlArray!.count {
+                                print(i)
+                            }
+                            for urlString in imageUrlArray! {
+                                self.buildPhotoObject(with: urlString, pin: pin!)
+                            }
+                            print("Done downloading")
+                            UserDefaults.standard.set(true, forKey: kImagesSet)
+                        }
+                    })
                 }
             })
+            
+            
         }
     }
 
@@ -180,7 +191,7 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
 
             //Create the pin, it will store it in CoreData
             let pinDropped = Pin(latitude: coord.latitude, longitude: coord.longitude, context: fetchedResultsController!.managedObjectContext)
-            self.getFlickrImages(21, for: pinDropped)
+            self.getFlickrImages(21, for: pinDropped, newImagesrRequested: false)
             UserDefaults.standard.set(true, forKey: kFirstTimePinDropped)
             
             self.arrayOfPins?.append(pinDropped)

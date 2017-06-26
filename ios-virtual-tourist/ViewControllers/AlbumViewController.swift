@@ -12,6 +12,7 @@ import MapKit
 
 let kEditingPhotos  = "editingPhotos"
 let kFlickrImages   = "newImages"
+let kImagesSet      = "imagesSet"
 
 class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UICollectionViewDataSource, NSFetchedResultsControllerDelegate {
 
@@ -35,9 +36,7 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
         self.collectionView.delegate = self
         self.collectionView.dataSource = self
         self.collectionView.allowsMultipleSelection = true
-        
-        //NotificationCenter.default.addObserver(self, selector: #selector(performReload), name: Notification.Name(kFlickrImages) , object: nil)
-        
+                
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -47,6 +46,7 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
         // Testing bool and UserDefault
         self.loadPreviewMap()
         UserDefaults.standard.set(false, forKey: kEditingPhotos)
+        UserDefaults.standard.set(false, forKey: kImagesSet)
     }
     
     override func viewWillDisappear(_ animated: Bool) {
@@ -69,10 +69,6 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
         fetchedResultsController = NSFetchedResultsController(fetchRequest: fr, managedObjectContext:delegate.stack.context, sectionNameKeyPath: nil, cacheName: nil)
     }
     
-    func performReload() {
-        self.collectionView.reloadData()
-    }
-    
     func loadPreviewMap() {
         // Load small map with coordinates and region
         let annotation = MKPointAnnotation()
@@ -85,22 +81,35 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
     // MARK: - IBActions
     @IBAction func newCollectionButtonPressed(_ sender: UIButton) {
         if UserDefaults.standard.bool(forKey: kEditingPhotos) {
-            
+
             // Perform DELETE in the photo object (Photo Class)
             // Remove selected items from the collection view
-            let photosSelected =  self.collectionView.indexPathsForSelectedItems
-            
-            for index in photosSelected! {
-                let x = fetchedResultsController?.object(at: index) as! Photo
-                Photo.deletePhoto(photo: x, context: delegate.stack.context)
+            let indexPaths =  self.collectionView.indexPathsForSelectedItems
+            for index in indexPaths! {
+                
+                // 1.
+                let photoToBeDeleted = fetchedResultsController?.object(at: index) as! Photo
+                Photo.deletePhoto(photo: photoToBeDeleted, context: delegate.stack.context)
+
+                // 2.
+                self.collectionView.deselectItem(at: index, animated: true)
+                
+                print("deleted cell: \(index)")
             }
+            
+            
+            print("selected cells after deletion: \(self.collectionView.indexPathsForSelectedItems)")
             self.newCollectionButton.setTitle("New Collection", for: .normal)
         } else {
             
             // TODO: delete the 21 images
             // TODO: get new set of images
+            for photo in (fetchedResultsController?.fetchedObjects)! {
+                Photo.deletePhoto(photo: photo as! Photo, context: delegate.stack.context)
+            }
             
-            //self.getFlickrImages(21, for: self.pin)
+            let travelLocationVC = storyboard?.instantiateViewController(withIdentifier: kTravelLocationMapsViewController) as! TravelLocationMapsViewController
+            travelLocationVC.getFlickrImages(21, for: self.pin, newImagesrRequested: true)
         }
     }
     
@@ -110,7 +119,6 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
     }
     
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-
         // RETURN the count of the fetched objects from the ModelObject
         if let count = fetchedResultsController?.sections?[0].numberOfObjects {
             return count
@@ -119,11 +127,12 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
     }
     
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
-        let cell =  collectionView.dequeueReusableCell(withReuseIdentifier: "FlickrImageCollectionViewCell", for: indexPath) as! FlickrImageCollectionViewCell
+        let reuseIdentifier = "FlickrImageCollectionViewCell"
+        let cell =  collectionView.dequeueReusableCell(withReuseIdentifier: reuseIdentifier, for: indexPath) as! FlickrImageCollectionViewCell
         
         cell.backgroundColor = UIColor.blue
         cell.activityIndicatorImageView.startAnimating()
-
+        cell.imageView.image = UIImage(named: "placeholderimage")
         // IF bool has not been set by the Flickr Network call
         //    RETURN CELL, We have object from the entity
         if !UserDefaults.standard.bool(forKey: kFirstTimePinDropped) {
@@ -135,11 +144,8 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
         } else {
             // IF the FlickNetwork call succeded  build the cell image,
             // ELSE return the cell with loading effect
-            
-            if let object = fetchedResultsController?.object(at: indexPath) {
-                let photoObject = object as! Photo
-                if let photoURLString = photoObject.url {
-                    FIClient().downloadImage(withURL: photoURLString, completionHandler: {
+                if let photoObject = fetchedResultsController?.object(at: indexPath) as? Photo {
+                    FIClient().downloadImage(withURL: photoObject.url!, completionHandler: {
                         (data, success) in
                         if !success {
                             cell.activityIndicatorImageView.stopAnimating()
@@ -155,25 +161,26 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
                         
                     })
                 }
+  
             }
-        }
         
         return cell
     }
     
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-            self.newCollectionButton.setTitle("Remove Selected Pictures", for: .normal)
-            let cell = self.collectionView.cellForItem(at: indexPath) as! FlickrImageCollectionViewCell
-            //cell.selectedBackgroundView?.alpha = 0.5
-            cell.imageView.alpha = 0.2
-            UserDefaults.standard.set(true, forKey: kEditingPhotos)
+        self.newCollectionButton.setTitle("Remove Selected Pictures", for: .normal)
+        
+        let cell = self.collectionView.cellForItem(at: indexPath) as! FlickrImageCollectionViewCell
+        
+        print("selected cells: \(indexPath.row)")
+        cell.imageView.alpha = 0.2
+        UserDefaults.standard.set(true, forKey: kEditingPhotos)
     }
     
     func collectionView(_ collectionView: UICollectionView, didDeselectItemAt indexPath: IndexPath) {
         let cell = self.collectionView.cellForItem(at: indexPath) as! FlickrImageCollectionViewCell
         cell.selectedBackgroundView?.alpha = 1
         cell.imageView.alpha = 1
-        
         // UI: if all photos deselected
         if self.collectionView.indexPathsForSelectedItems?.count == 0 {
             UserDefaults.standard.set(false, forKey: kEditingPhotos)
@@ -214,7 +221,6 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
                 operation.start()
             }
         }) { (completed) in
-            print("done executing blockOperation whorray")
         }
     }
     
