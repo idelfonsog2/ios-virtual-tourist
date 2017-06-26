@@ -17,6 +17,8 @@ struct Flickr {
     
     static let baseUrl = ""
     
+    static let PageLimit    = 40
+    
     static let SearchBBoxHalfWidth = 0.5
     static let SearchBBoxHalfHeight = 0.5
     static let SearchLatRange = (-90.0, 90.0)
@@ -34,6 +36,7 @@ struct ParameterKeys {
     static let Bbox         = "bbox"
     static let Extras       = "extras"
     static let PlaceId      = "place_id"
+    static let Page         = "page"
 }
 
 struct ParameterValues {

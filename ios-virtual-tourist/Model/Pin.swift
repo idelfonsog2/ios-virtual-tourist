@@ -25,7 +25,7 @@ public class Pin: NSManagedObject {
         context.delete(pin)
         do {
             try context.save()
-            print("Context deleted objcets saved")
+            print("Context deleted objects saved")
         } catch {
             fatalError("failed to save deleted objects")
         }

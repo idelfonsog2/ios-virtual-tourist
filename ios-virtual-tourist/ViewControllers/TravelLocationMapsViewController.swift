@@ -85,7 +85,7 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
                 self.mapView.addAnnotation(annotation)
             }
         } catch {
-            print("Failed to retrive pins")
+            fatalError("Failed to retrive pins")
         }
     }
     
@@ -130,7 +130,6 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
                     
                 } else {
                     let placeId = response as! String
-                    print("place id \(response)")
                     FIClient().photoSearchFor(bbox: bbox, placeId: placeId, thisMany: number, completionHandler: { (response, success) in
                         if !success {
                             print("Error downloading picture")
@@ -138,13 +137,9 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
                             // When download has finish save urls and reload collection view
                             let imageUrlArray = response as? [String]
                             
-                            for i in 0 ..< imageUrlArray!.count {
-                                print(i)
-                            }
                             for urlString in imageUrlArray! {
                                 self.buildPhotoObject(with: urlString, pin: pin!)
                             }
-                            print("Done downloading")
                             UserDefaults.standard.set(true, forKey: kImagesSet)
                         }
                     })
@@ -217,7 +212,6 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
     
     
     func mapView(_ mapView: MKMapView, regionDidChangeAnimated animated: Bool) {
-        //FIXME: try to use the object MKCoordinateRegion
         UserDefaults.standard.set(self.mapView.region.center.latitude, forKey: kLatitudeRegion)
         UserDefaults.standard.set(self.mapView.region.center.longitude, forKey: kLongitudeRegion)
         UserDefaults.standard.set(self.mapView.region.span.latitudeDelta, forKey: kLastLatitudeDelta)
@@ -232,10 +226,8 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
         var pinSelected: Pin?
         
         //Look for the matching selected pin in the tempArray
-        //FIXME: There should be a better way
         for pinView in arrayOfPins! {
             if pinView.latitude == view.annotation?.coordinate.latitude && pinView.longitude == view.annotation?.coordinate.longitude {
-                print("Pin found in ModelObject")
                 pinSelected = pinView
             }
         }

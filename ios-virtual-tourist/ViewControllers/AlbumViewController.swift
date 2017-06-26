@@ -92,12 +92,8 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
 
                 // 2.
                 self.collectionView.deselectItem(at: index, animated: true)
-                
-                print("deleted cell: \(index)")
             }
             
-            
-            print("selected cells after deletion: \(self.collectionView.indexPathsForSelectedItems)")
             self.newCollectionButton.setTitle("New Collection", for: .normal)
         } else {
             
@@ -172,7 +168,6 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
         
         let cell = self.collectionView.cellForItem(at: indexPath) as! FlickrImageCollectionViewCell
         
-        print("selected cells: \(indexPath.row)")
         cell.imageView.alpha = 0.2
         UserDefaults.standard.set(true, forKey: kEditingPhotos)
     }
@@ -211,7 +206,7 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
             
             break
         default:
-            print("Nothing")
+            break
         }
     }
     

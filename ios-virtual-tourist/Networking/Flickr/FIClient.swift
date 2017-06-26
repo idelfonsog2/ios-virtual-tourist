@@ -16,12 +16,17 @@ class FIClient: NSObject {
      */
     func photoSearchFor(bbox: String?, placeId: String?, thisMany: Int, completionHandler: @escaping(_ response: Any?, _ succes: Bool) -> Void) {
         
+        // pick a random page!
+        let pageLimit = Flickr.PageLimit
+        let randomPage = Int(arc4random_uniform(UInt32(pageLimit))) + 1
+        
         var params: [String: Any] = [
             ParameterKeys.API: Flickr.ApiKeyValue,
             ParameterKeys.MethodKey: Method.SearchPhotos,
             ParameterKeys.Format: ParameterValues.JSONValue,
             ParameterKeys.NonJSONCallBack: ParameterValues.JSONCallBackValue,
-            ParameterKeys.Extras: ParameterValues.UrlM
+            ParameterKeys.Extras: ParameterValues.UrlM,
+            ParameterKeys.Page: randomPage
         ]
         
         if placeId != nil {
@@ -32,9 +37,12 @@ class FIClient: NSObject {
         
         let url = urlFromParams(params: params)
         let request = NSMutableURLRequest(url: url)
+        request.httpMethod = "GET"
         
+        print(request.url)
         VTNetworking().taskForGET(request) { (response, success) in
             if success {
+                
                 guard let photosDictionary = response?[ResponseKeys.Photos] as? [String: Any] else {
                     completionHandler("No PHOTOS key found", false)
                     return
@@ -48,9 +56,10 @@ class FIClient: NSObject {
                 
                 var arrayOfUrlImages: [String] = []
                 
+                //let randomPhotoIndex = Int(arc4random_uniform(UInt32(photoArrayDictionary.count)))
+                
                 for index in 0 ..< thisMany {
-                    let photo = photoArrayDictionary[index]
-                    
+                    let photo = photoArrayDictionary[index] as [String: AnyObject]
                     guard let imageUrlString = photo[ResponseKeys.UrlM] as? String else {
                         completionHandler("No 'imageURLString found", false)
                         return
@@ -79,9 +88,8 @@ class FIClient: NSObject {
         ]
         
         let url = urlFromParams(params: params)
-        print(url)
         let request = NSMutableURLRequest(url: url)
-        
+        print(request.url)
         VTNetworking().taskForGET(request) { (response, success) in
             if success {
                 guard let photosDictionary = response?[ResponseKeys.Places] as? [String: Any] else {
@@ -111,16 +119,17 @@ class FIClient: NSObject {
         }
         
     }
-    func downloadImage(withURL urlString: String, completionHandler: @escaping(_ response: Any, _ success: Bool) -> Void) {
+    func downloadImage(withURL urlString: String, completionHandler: @escaping(_ response: Any?, _ success: Bool) -> Void) {
         
         let url = URL(string: urlString)!
         let task = URLSession.shared.dataTask(with: url) { (data, response, error) in
             guard error == nil else {
-                print("error retrieving image")
+                completionHandler("error retrieving image", false)
                 return
             }
             
             guard let data = data else  {
+                completionHandler("error retrieving data image", false)
                 return
             }
             
