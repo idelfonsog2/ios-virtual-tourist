@@ -70,8 +70,6 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
         // Create FetchedResultsController
         fetchedResultsController = NSFetchedResultsController(fetchRequest: fr, managedObjectContext:delegate.stack.context, sectionNameKeyPath: nil, cacheName: nil)
         
-        print(fetchedResultsController?.fetchedObjects)
-        
     }
     
     func loadPreviewMap() {
@@ -145,14 +143,16 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
             cell.activityIndicatorImageView.stopAnimating()
             cell.activityIndicatorImageView.isHidden = true
         } else {
-            let photoObjectArray = fetchedResultsController?.object(at: indexPath) as! Photo
-            FIClient().downloadImage(withURL: (photoObjectArray.url!), completionHandler: {
+            let photoObject = fetchedResultsController?.object(at: indexPath) as! Photo
+            FIClient().downloadImage(withURL: (photoObject.url!), completionHandler: {
                 (data, success) in
                 if !success {
                     print("testing")
                 } else {
+                    photoObject.imageData = data as! NSData
                     DispatchQueue.main.async {
                         cell.imageView?.image = UIImage(data: data as! Data)
+                        
                         cell.backgroundColor = UIColor.white
                         cell.activityIndicatorImageView.stopAnimating()
                         cell.activityIndicatorImageView.isHidden = true
@@ -205,26 +205,6 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
                 self.collectionView.deleteItems(at: [indexPath!])
             }))
     
-            break
-        case .update:
-            let photoObject = anObject as! Photo
-            let url = photoObject.url
-            let cell = self.collectionView.cellForItem(at: indexPath!) as! FlickrImageCollectionViewCell
-            FIClient().downloadImage(withURL: photoObject.url!, completionHandler: {
-                (data, success) in
-                if !success {
-                    cell.activityIndicatorImageView.stopAnimating()
-                    cell.activityIndicatorImageView.isHidden = true
-                } else {
-                    DispatchQueue.main.async {
-                        cell.imageView?.image = UIImage(data: data as! Data)
-                        cell.backgroundColor = UIColor.white
-                        cell.activityIndicatorImageView.stopAnimating()
-                        cell.activityIndicatorImageView.isHidden = true
-                    }
-                }
-                
-            })
             break
             
         default:

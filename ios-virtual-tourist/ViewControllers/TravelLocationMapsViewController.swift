@@ -141,12 +141,16 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
                         } else {
                             let imageUrlArray = response as? [String]
 
-                            for urlString in imageUrlArray! {
-                                let photoObject = Photo(imageData: nil, url: urlString, context: self.delegate.stack.context)
-                                photoObject.pin = pin
-                                self.photoObjectsArray?.append(photoObject)
+                            // Create only 21 photos
+                            if imageUrlArray!.count > 20 {
+                                for index in 0 ..< 21 {
+                                    let photoObject = Photo(imageData: nil, url: imageUrlArray![index], context: self.delegate.stack.context)
+                                    photoObject.pin = pin
+                                    self.photoObjectsArray?.append(photoObject)
+                                }
+                                NotificationCenter.default.post(Notification(name: Notification.Name(kDownloadImages)))
                             }
-                           NotificationCenter.default.post(Notification(name: Notification.Name(kDownloadImages)))
+                            
                         }
                     })
                 }
@@ -168,9 +172,6 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
         }
     }
     
-    func buildPhotoObject(with urlString: String, pin: Pin) {
-        
-    }
     // MARK: - IBActions
     @IBAction func dropPinButton(_ sender: UILongPressGestureRecognizer) {
         
