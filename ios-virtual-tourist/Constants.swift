@@ -19,8 +19,17 @@ let kLongitudeRegion        = "longitudeRegion"
 
 // MARK: - Notification Names
 let kCaptureCoordinates = "captureCoordinates"
+let kDownloadImages     = "downloadImageWith"
 
 
 // MARK: - VC Identifiers
 let kTravelLocationMapsViewController = "TravelLocationMapsViewController"
 let kAlbumViewController = "AlbumViewController"
+
+
+let kEditingPhotos  = "editingPhotos"
+let kFlickrImages   = "newImages"
+let kImagesSet      = "imagesSet"
+
+
+let kFirstTimePinDropped = "pinDropped"

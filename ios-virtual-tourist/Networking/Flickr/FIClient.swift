@@ -17,16 +17,13 @@ class FIClient: NSObject {
     func photoSearchFor(bbox: String?, placeId: String?, thisMany: Int, completionHandler: @escaping(_ response: Any?, _ succes: Bool) -> Void) {
         
         // pick a random page!
-        let pageLimit = Flickr.PageLimit
-        let randomPage = Int(arc4random_uniform(UInt32(pageLimit))) + 1
-        
+
         var params: [String: Any] = [
             ParameterKeys.API: Flickr.ApiKeyValue,
             ParameterKeys.MethodKey: Method.SearchPhotos,
             ParameterKeys.Format: ParameterValues.JSONValue,
             ParameterKeys.NonJSONCallBack: ParameterValues.JSONCallBackValue,
             ParameterKeys.Extras: ParameterValues.UrlM,
-            ParameterKeys.Page: randomPage
         ]
         
         if placeId != nil {
@@ -39,7 +36,6 @@ class FIClient: NSObject {
         let request = NSMutableURLRequest(url: url)
         request.httpMethod = "GET"
         
-        print(request.url)
         VTNetworking().taskForGET(request) { (response, success) in
             if success {
                 
@@ -56,10 +52,16 @@ class FIClient: NSObject {
                 
                 var arrayOfUrlImages: [String] = []
                 
-                //let randomPhotoIndex = Int(arc4random_uniform(UInt32(photoArrayDictionary.count)))
+                let randomPhotoIndex = Int(arc4random_uniform(UInt32(photoArrayDictionary.count)))
                 
-                for index in 0 ..< thisMany {
+                if photoArrayDictionary.count == 0 {
+                    completionHandler("No 'imageURLString found", false)
+                }
+                
+                for index in 0 ..< photoArrayDictionary.count {
+                    
                     let photo = photoArrayDictionary[index] as [String: AnyObject]
+                    
                     guard let imageUrlString = photo[ResponseKeys.UrlM] as? String else {
                         completionHandler("No 'imageURLString found", false)
                         return
@@ -67,7 +69,7 @@ class FIClient: NSObject {
                     
                     arrayOfUrlImages.append(imageUrlString)
                 }
-                
+
                 // @return array of url strings
                 completionHandler(arrayOfUrlImages, true)
                 

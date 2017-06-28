@@ -11,7 +11,6 @@ import MapKit
 import CoreLocation
 import CoreData
 
-let kFirstTimePinDropped = "pinDropped"
 class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegate, UINavigationControllerDelegate {
 
     // MARK: - Properties
@@ -19,6 +18,8 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
     var locationManager: CLLocationManager?
     var editButton: UIBarButtonItem?
     var arrayOfPins: [Pin]?
+    var annotations: [MKAnnotation]?
+    var photoObjectsArray: [Photo]?
     
     // MARK: - IBOutlets
     @IBOutlet weak var mapView: MKMapView!
@@ -40,6 +41,11 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
         self.checkForLastCoordinates()
     }
     
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewDidDisappear(animated)
+        self.mapView.removeAnnotations(annotations!)
+        self.arrayOfPins?.removeAll(keepingCapacity: true)
+    }
     // MARK: - TravelLoacationMapViewControllers
     
     func initCoreDataFetchRequest() {
@@ -54,16 +60,11 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
         // Init FetchResultsController
         fetchedResultsController = NSFetchedResultsController(fetchRequest: fr, managedObjectContext: stack.context, sectionNameKeyPath: nil, cacheName: nil)
         
-        do {
-            try fetchedResultsController?.performFetch()
-        } catch {
-            fatalError("Unable to performFetch()")
-        }
     }
     
     func setupNavigationBar() {
         //Add edit button to the navigaton bar
-        editButton = UIBarButtonItem(title: "Edit", style: .plain, target: self, action: #selector(TravelLocationMapsViewController.editMode))
+        editButton = UIBarButtonItem(title: "Edit", style: .plain, target: self, action: #selector(editMode))
         self.navigationItem.rightBarButtonItem = editButton
     }
     
@@ -76,14 +77,15 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
     func displaySavedPins() {
         do {
             arrayOfPins = []
-
+            annotations = []
             let array = try! delegate.stack.context.fetch((fetchedResultsController?.fetchRequest)!) as? [Pin]
             for pin in array! {
                 arrayOfPins!.append(pin)
                 let annotation = MKPointAnnotation()
                 annotation.coordinate = CLLocationCoordinate2D(latitude: pin.latitude, longitude: pin.longitude)
-                self.mapView.addAnnotation(annotation)
+                self.annotations?.append(annotation)
             }
+            self.mapView.addAnnotations(annotations!)
         } catch {
             fatalError("Failed to retrive pins")
         }
@@ -121,26 +123,30 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
         }
     }
 
-    func getFlickrImages(_ number: Int, for pin: Pin?, newImagesrRequested: Bool) {
+    func buildPhotoObjectsWithFlickr(_ number: Int, for pin: Pin?, newImagesrRequested: Bool) {
         if pin != nil {
             let bbox = bboxString(latitude: (pin?.latitude)!, longitude: (pin?.longitude)!)
+            self.photoObjectsArray = []
+            // Create 21 Photo objects with default values
+            // Append them to an arr for later to use it to append the urls
             
             FIClient().photoSearchFor(lat: (pin?.latitude)!, lon: (pin?.longitude)!, completionHandler: { (response, success) in
                 if !success {
                     
                 } else {
                     let placeId = response as! String
-                    FIClient().photoSearchFor(bbox: bbox, placeId: placeId, thisMany: number, completionHandler: { (response, success) in
+                    FIClient().photoSearchFor(bbox: bbox, placeId: nil, thisMany: number, completionHandler: { (response, success) in
                         if !success {
                             print("Error downloading picture")
                         } else {
-                            // When download has finish save urls and reload collection view
                             let imageUrlArray = response as? [String]
-                            
+
                             for urlString in imageUrlArray! {
-                                self.buildPhotoObject(with: urlString, pin: pin!)
+                                let photoObject = Photo(imageData: nil, url: urlString, context: self.delegate.stack.context)
+                                photoObject.pin = pin
+                                self.photoObjectsArray?.append(photoObject)
                             }
-                            UserDefaults.standard.set(true, forKey: kImagesSet)
+                           NotificationCenter.default.post(Notification(name: Notification.Name(kDownloadImages)))
                         }
                     })
                 }
@@ -163,16 +169,7 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
     }
     
     func buildPhotoObject(with urlString: String, pin: Pin) {
-        do {
-            let url = URL(string: urlString)
-            let data = try Data(contentsOf: url!)
-            
-            
-            let photoObject = Photo(imageData: data as NSData, url: urlString, context: delegate.stack.context)
-            photoObject.pin = pin
-        } catch {
-            fatalError("unable to build Photo Object")
-        }
+        
     }
     // MARK: - IBActions
     @IBAction func dropPinButton(_ sender: UILongPressGestureRecognizer) {
@@ -186,7 +183,7 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
 
             //Create the pin, it will store it in CoreData
             let pinDropped = Pin(latitude: coord.latitude, longitude: coord.longitude, context: fetchedResultsController!.managedObjectContext)
-            self.getFlickrImages(21, for: pinDropped, newImagesrRequested: false)
+            self.buildPhotoObjectsWithFlickr(21, for: pinDropped, newImagesrRequested: false)
             UserDefaults.standard.set(true, forKey: kFirstTimePinDropped)
             
             self.arrayOfPins?.append(pinDropped)

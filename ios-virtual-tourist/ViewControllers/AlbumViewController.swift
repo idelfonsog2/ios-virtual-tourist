@@ -10,9 +10,6 @@ import UIKit
 import CoreData
 import MapKit
 
-let kEditingPhotos  = "editingPhotos"
-let kFlickrImages   = "newImages"
-let kImagesSet      = "imagesSet"
 
 class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UICollectionViewDataSource, NSFetchedResultsControllerDelegate {
 
@@ -36,6 +33,8 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
         self.collectionView.delegate = self
         self.collectionView.dataSource = self
         self.collectionView.allowsMultipleSelection = true
+        
+        NotificationCenter.default.addObserver(self, selector: #selector(downloadImageWith), name: Notification.Name(kDownloadImages), object: nil)
                 
     }
     
@@ -45,6 +44,7 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
         
         // Testing bool and UserDefault
         self.loadPreviewMap()
+        self.downloadImageWith()
         UserDefaults.standard.set(false, forKey: kEditingPhotos)
         UserDefaults.standard.set(false, forKey: kImagesSet)
     }
@@ -53,6 +53,7 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
         super.viewWillDisappear(animated)
         // FLAG next time pin is tapped -> load images from coreData
         UserDefaults.standard.set(false, forKey: kFirstTimePinDropped)
+        NotificationCenter.default.removeObserver(self)
     }
     
     // MARK: - AlbumViewController
@@ -65,8 +66,12 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
         
         fr.predicate = pred
         
+
         // Create FetchedResultsController
         fetchedResultsController = NSFetchedResultsController(fetchRequest: fr, managedObjectContext:delegate.stack.context, sectionNameKeyPath: nil, cacheName: nil)
+        
+        print(fetchedResultsController?.fetchedObjects)
+        
     }
     
     func loadPreviewMap() {
@@ -75,6 +80,9 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
         annotation.coordinate = CLLocationCoordinate2D(latitude: pin!.latitude, longitude: pin!.longitude)
         self.mapView.setRegion(mapRegion!, animated: true)
         self.mapView.addAnnotation(annotation)
+    }
+    
+    func downloadImageWith()  {
     }
     
     // MARK: - IBActions
@@ -104,7 +112,7 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
             }
             
             let travelLocationVC = storyboard?.instantiateViewController(withIdentifier: kTravelLocationMapsViewController) as! TravelLocationMapsViewController
-            travelLocationVC.getFlickrImages(21, for: self.pin, newImagesrRequested: true)
+            travelLocationVC.buildPhotoObjectsWithFlickr(21, for: self.pin, newImagesrRequested: true)
         }
     }
     
@@ -116,7 +124,7 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         // RETURN the count of the fetched objects from the ModelObject
         if let count = fetchedResultsController?.sections?[0].numberOfObjects {
-            return count            
+            return count
         }
       return 0
     }
@@ -136,29 +144,22 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
             cell.imageView?.image = UIImage(data: photo.imageData! as Data)
             cell.activityIndicatorImageView.stopAnimating()
             cell.activityIndicatorImageView.isHidden = true
-            
         } else {
-            // IF the FlickNetwork call succeded  build the cell image,
-            // ELSE return the cell with loading effect
-                if let photoObject = fetchedResultsController?.object(at: indexPath) as? Photo {
-                    FIClient().downloadImage(withURL: photoObject.url!, completionHandler: {
-                        (data, success) in
-                        if !success {
-                            cell.activityIndicatorImageView.stopAnimating()
-                            cell.activityIndicatorImageView.isHidden = true
-                        } else {
-                            DispatchQueue.main.async {
-                                cell.imageView?.image = UIImage(data: data as! Data)
-                                cell.backgroundColor = UIColor.white
-                                cell.activityIndicatorImageView.stopAnimating()
-                                cell.activityIndicatorImageView.isHidden = true
-                            }
-                        }
-                        
-                    })
+            let photoObjectArray = fetchedResultsController?.object(at: indexPath) as! Photo
+            FIClient().downloadImage(withURL: (photoObjectArray.url!), completionHandler: {
+                (data, success) in
+                if !success {
+                    print("testing")
+                } else {
+                    DispatchQueue.main.async {
+                        cell.imageView?.image = UIImage(data: data as! Data)
+                        cell.backgroundColor = UIColor.white
+                        cell.activityIndicatorImageView.stopAnimating()
+                        cell.activityIndicatorImageView.isHidden = true
+                    }
                 }
-  
-            }
+            })
+        }
         
         return cell
     }
@@ -193,9 +194,9 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
         switch type {
         case .insert:
             // The index path of the changed object (this value is nil for insertions)
-            self.blockOperation?.append(BlockOperation(block: { 
-                self.collectionView.insertItems(at: [newIndexPath!])
-            }))
+//            self.blockOperation?.append(BlockOperation(block: {  
+//                self.collectionView.insertItems(at: [newIndexPath!])
+//            }))
             
             break
         case .delete:
@@ -203,8 +204,29 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
             self.blockOperation?.append(BlockOperation(block: {
                 self.collectionView.deleteItems(at: [indexPath!])
             }))
-            
+    
             break
+        case .update:
+            let photoObject = anObject as! Photo
+            let url = photoObject.url
+            let cell = self.collectionView.cellForItem(at: indexPath!) as! FlickrImageCollectionViewCell
+            FIClient().downloadImage(withURL: photoObject.url!, completionHandler: {
+                (data, success) in
+                if !success {
+                    cell.activityIndicatorImageView.stopAnimating()
+                    cell.activityIndicatorImageView.isHidden = true
+                } else {
+                    DispatchQueue.main.async {
+                        cell.imageView?.image = UIImage(data: data as! Data)
+                        cell.backgroundColor = UIColor.white
+                        cell.activityIndicatorImageView.stopAnimating()
+                        cell.activityIndicatorImageView.isHidden = true
+                    }
+                }
+                
+            })
+            break
+            
         default:
             break
         }
