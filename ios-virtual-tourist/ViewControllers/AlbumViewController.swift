@@ -116,11 +116,8 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
                 // FIXME: This could be improve though
                 if imageUrlArray!.count > 20 {
                     for index in 0 ..< 21 {
-                        print("index \(index)")
-                        print(imageUrlArray![index])
                         let photoObject = Photo(imageData: nil, url: imageUrlArray![index], context: self.delegate.stack.context)
                         photoObject.pin = self.pin
-                        print("success newCollection")
                     }
                     
                 }

@@ -19,7 +19,6 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
     var editButton: UIBarButtonItem?
     var arrayOfPins: [Pin]?
     var annotations: [MKAnnotation]?
-    var photoObjectsArray: [Photo]?
     
     // MARK: - IBOutlets
     @IBOutlet weak var mapView: MKMapView!
@@ -48,9 +47,10 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
         self.arrayOfPins?.removeAll(keepingCapacity: true)
         UserDefaults.standard.set(false, forKey: kEditModeOn)
     }
-    // MARK: - TravelLoacationMapViewControllers
     
+    // MARK: - TravelLoacationMapViewControllers
     func initCoreDataFetchRequest() {
+        
         let stack = delegate.stack
         
         //Create the fetch Request
@@ -128,7 +128,6 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
     func buildPhotoObjectsWithFlickr(_ number: Int, for pin: Pin?, newImagesrRequested: Bool) {
         if pin != nil {
             let bbox = FIClient().bboxString(latitude: (pin?.latitude)!, longitude: (pin?.longitude)!)
-            self.photoObjectsArray = []
             
             /*
              Create 21 Photo objects with default values
@@ -143,12 +142,9 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
                     // Create only 21 photos
                     if imageUrlArray!.count > 20 {
                         for index in 0 ..< 21 {
-                            print(index)
-                            print(imageUrlArray![index])
+
                             let photoObject = Photo(imageData: nil, url: imageUrlArray![index], context: self.delegate.stack.context)
                             photoObject.pin = pin
-                            print("Photo created")
-                            self.photoObjectsArray?.append(photoObject)
                         }
                         
                     }
