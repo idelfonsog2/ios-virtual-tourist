@@ -142,10 +142,12 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
                     
                     // Create only 21 photos
                     if imageUrlArray!.count > 20 {
-                        
                         for index in 0 ..< 21 {
+                            print(index)
+                            print(imageUrlArray![index])
                             let photoObject = Photo(imageData: nil, url: imageUrlArray![index], context: self.delegate.stack.context)
                             photoObject.pin = pin
+                            print("Photo created")
                             self.photoObjectsArray?.append(photoObject)
                         }
                         

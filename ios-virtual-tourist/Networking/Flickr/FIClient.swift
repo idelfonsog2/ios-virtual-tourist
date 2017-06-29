@@ -49,16 +49,14 @@ class FIClient: NSObject {
                     return
                 }
                 
-                
-                var arrayOfUrlImages: [String] = []
-                
-                let randomPhotoIndex = Int(arc4random_uniform(UInt32(photoArrayDictionary.count)))
-                
                 if photoArrayDictionary.count == 0 {
                     completionHandler("No 'imageURLString found", false)
                 }
                 
+                var arrayOfUrlImages: [String] = []
+                
                 for index in 0 ..< photoArrayDictionary.count {
+                    let randomPhotoIndex = Int(arc4random_uniform(UInt32(photoArrayDictionary.count)))
                     print("randomPhotoIndex \(randomPhotoIndex)")
                     
                     let photo = photoArrayDictionary[randomPhotoIndex] as [String: AnyObject]
