@@ -78,7 +78,14 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
         
         for index in indexPaths! {
             let photoToBeDeleted = fetchedResultsController?.object(at: index) as! Photo
-            Photo.deletePhoto(photo: photoToBeDeleted, context: delegate.stack.context)
+            //Photo().deletePhoto(photo: photoToBeDeleted, context: delegate.stack.context)
+            
+            delegate.stack.context.delete(photoToBeDeleted as! Photo)
+            do {
+                try delegate.stack.context.save()
+            } catch {
+                fatalError("Unable to delete photo from CoreData")
+            }
             self.collectionView.deselectItem(at: index, animated: true)
         }
         
@@ -87,7 +94,13 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
     
     func deleteEntireAlbum() {
         for photo in (fetchedResultsController?.fetchedObjects)! {
-            Photo.deletePhoto(photo: photo as! Photo, context: delegate.stack.context)
+            //Photo().deletePhoto(photo: photo as! Photo, context: delegate.stack.context)
+            delegate.stack.context.delete(photo as! Photo)
+            do {
+                try delegate.stack.context.save()
+            } catch {
+                fatalError("Unable to delete photo from CoreData")
+            }
         }
         
         UserDefaults.standard.set(true, forKey: kNewCollection)
@@ -103,10 +116,11 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
                 
                 if imageUrlArray!.count > 20 {
                     for index in 0 ..< 21 {
-                        let photoObject = Photo(imageData: nil, url: imageUrlArray![index], context: self.delegate.stack.context)
-                        photoObject.pin = self.pin
+                        DispatchQueue.main.async {
+                            let photoObject = Photo(imageData: nil, url: imageUrlArray![index], context: self.delegate.stack.context)
+                            photoObject.pin = self.pin
+                        }
                     }
-                    
                 }
             }
         })

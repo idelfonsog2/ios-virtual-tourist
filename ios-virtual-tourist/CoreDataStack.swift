@@ -19,6 +19,7 @@ struct CoreDataStack {
     internal let dbURL: URL
     let context: NSManagedObjectContext
     let backgroundContext: NSManagedObjectContext
+    let persistentContext: NSManagedObjectContext
 
     // MARK: Initializers
     
@@ -45,7 +46,11 @@ struct CoreDataStack {
         context = NSManagedObjectContext(concurrencyType: .mainQueueConcurrencyType)
         context.persistentStoreCoordinator = coordinator
         
+        persistentContext = NSManagedObjectContext(concurrencyType: .privateQueueConcurrencyType)
+        persistentContext.persistentStoreCoordinator = coordinator
+        
         backgroundContext = NSManagedObjectContext(concurrencyType: .privateQueueConcurrencyType)
+        backgroundContext.parent = context
         
         // Add a SQLite store located in the documents folder
         let fm = FileManager.default
@@ -90,6 +95,33 @@ internal extension CoreDataStack  {
 
 extension CoreDataStack {
     
+    func save() {
+        // We call this synchronously, but it's a very fast
+        // operation (it doesn't hit the disk). We need to know
+        // when it ends so we can call the next save (on the persisting
+        // context). This last one might take some time and is done
+        // in a background queue
+        context.performAndWait() {
+            
+            if self.context.hasChanges {
+                do {
+                    try self.context.save()
+                } catch {
+                    fatalError("Error while saving main context: \(error)")
+                }
+                
+                // now we save in the background
+                self.persistentContext.perform() {
+                    do {
+                        try self.persistentContext.save()
+                    } catch {
+                        fatalError("Error while saving persisting context: \(error)")
+                    }
+                }
+            }
+        }
+    }
+    
     func saveContext() throws {
         if context.hasChanges {
             try context.save()
@@ -121,6 +153,7 @@ extension CoreDataStack {
     
     func performBackgroundBatchOperation(_ batch: @escaping Batch) {
         backgroundContext.perform {
+            
             batch(self.backgroundContext)
             
             //Save it to the parent context

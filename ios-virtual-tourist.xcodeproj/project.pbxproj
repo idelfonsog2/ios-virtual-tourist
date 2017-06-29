@@ -48,7 +48,7 @@
 		16E2D3F41EE99CCF00466ABB /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		16E2D3F71EE99CCF00466ABB /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		16E2D3F91EE99CCF00466ABB /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		16E2D4001EE9DBD700466ABB /* CoreDataStack.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CoreDataStack.swift; sourceTree = "<group>"; };
+		16E2D4001EE9DBD700466ABB /* CoreDataStack.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = CoreDataStack.swift; path = ../CoreDataStack.swift; sourceTree = "<group>"; };
 		16E2D4031EE9DCC500466ABB /* MapKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MapKit.framework; path = System/Library/Frameworks/MapKit.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
@@ -67,6 +67,7 @@
 		167E3C061EEB0098005AC20B /* Model */ = {
 			isa = PBXGroup;
 			children = (
+				16E2D4001EE9DBD700466ABB /* CoreDataStack.swift */,
 				167E3C031EEB0089005AC20B /* Model.xcdatamodeld */,
 				162632D41EF1B2FC00CF84E0 /* Photo+CoreDataProperties.swift */,
 				162632D31EF1B2FC00CF84E0 /* Photo.swift */,
@@ -117,7 +118,6 @@
 				16E2D3ED1EE99CCF00466ABB /* AppDelegate.swift */,
 				16E2D3F41EE99CCF00466ABB /* Assets.xcassets */,
 				167E3C011EEAEABF005AC20B /* Constants.swift */,
-				16E2D4001EE9DBD700466ABB /* CoreDataStack.swift */,
 				167E3C061EEB0098005AC20B /* Model */,
 				16D8509A1EEB5FF0003F4FC6 /* Networking */,
 				16E2D3FF1EE9DB6100466ABB /* ViewControllers */,

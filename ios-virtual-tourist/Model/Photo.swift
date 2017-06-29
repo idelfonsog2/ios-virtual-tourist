@@ -20,7 +20,7 @@ public class Photo: NSManagedObject {
         }
     }
     
-    static func deletePhoto(photo: Photo, context: NSManagedObjectContext) {
+    func deletePhoto(photo: Photo, context: NSManagedObjectContext) {
         context.delete(photo)
         do {
             try context.save()

@@ -44,7 +44,9 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
     override func viewWillDisappear(_ animated: Bool) {
         super.viewDidDisappear(animated)
         self.mapView.removeAnnotations(annotations!)
-        self.arrayOfPins?.removeAll(keepingCapacity: true)
+        self.arrayOfPins?.removeAll()
+        self.annotations?.removeAll()
+        self.mapView.removeAnnotations(annotations!)
         UserDefaults.standard.set(false, forKey: kEditModeOn)
     }
     
@@ -142,11 +144,9 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
                     // Create only 21 photos
                     if imageUrlArray!.count > 20 {
                         for index in 0 ..< 21 {
-
                             let photoObject = Photo(imageData: nil, url: imageUrlArray![index], context: self.delegate.stack.context)
                             photoObject.pin = pin
                         }
-                        
                     }
                 }
             })
