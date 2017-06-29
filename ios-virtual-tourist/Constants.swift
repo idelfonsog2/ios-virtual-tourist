@@ -20,7 +20,6 @@ let kNewCollection          = "newCollection"
 
 // MARK: - Notification Names
 let kCaptureCoordinates = "captureCoordinates"
-let kDownloadImages     = "downloadImageWith"
 
 
 // MARK: - VC Identifiers
@@ -34,3 +33,6 @@ let kImagesSet      = "imagesSet"
 
 
 let kFirstTimePinDropped = "pinDropped"
+
+// Collection ViewCell
+let kReuseFlicrCollectionViewCellIdentifier = "FlickrImageCollectionViewCell"
