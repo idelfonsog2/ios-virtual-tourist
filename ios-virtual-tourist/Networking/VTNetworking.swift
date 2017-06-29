@@ -51,4 +51,12 @@ class VTNetworking: NSObject {
         
         completionHandler(parsedResult, true)
     }
+    
+    // MARK: Shared Instance
+    class func sharedInstance() -> VTNetworking {
+        struct Singleton {
+            static var sharedInstance = VTNetworking()
+        }
+        return Singleton.sharedInstance
+    }
 }

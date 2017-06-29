@@ -14,7 +14,7 @@ class FIClient: NSObject {
      @params coordinates for the region of a pin
      @returns array of url images
      */
-    func photoSearchFor(bbox: String?, placeId: String?, thisMany: Int, completionHandler: @escaping(_ response: Any?, _ succes: Bool) -> Void) {
+    func photoSearchFor(bbox: String?, placeId: String?, completionHandler: @escaping(_ response: Any?, _ succes: Bool) -> Void) {
         
         // pick a random page!
 
@@ -59,8 +59,9 @@ class FIClient: NSObject {
                 }
                 
                 for index in 0 ..< photoArrayDictionary.count {
+                    print("randomPhotoIndex \(randomPhotoIndex)")
                     
-                    let photo = photoArrayDictionary[index] as [String: AnyObject]
+                    let photo = photoArrayDictionary[randomPhotoIndex] as [String: AnyObject]
                     
                     guard let imageUrlString = photo[ResponseKeys.UrlM] as? String else {
                         completionHandler("No 'imageURLString found", false)
@@ -142,6 +143,17 @@ class FIClient: NSObject {
         task.resume()
     }
     
+    func bboxString(latitude: Double, longitude: Double) -> String {
+        if  latitude != 0 &&  longitude != 0 {
+            let minimumLon = max(longitude - Flickr.SearchBBoxHalfWidth, Flickr.SearchLonRange.0)
+            let minimumLat = max(latitude - Flickr.SearchBBoxHalfHeight, Flickr.SearchLatRange.0)
+            let maximumLon = min(longitude + Flickr.SearchBBoxHalfWidth, Flickr.SearchLonRange.1)
+            let maximumLat = min(latitude + Flickr.SearchBBoxHalfHeight, Flickr.SearchLatRange.1)
+            return "\(minimumLon),\(minimumLat),\(maximumLon),\(maximumLat)"
+        } else {
+            return "0,0,0,0"
+        }
+    }
     
     func urlFromParams(params: [String: Any]) -> URL {
         var components = URLComponents()

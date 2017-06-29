@@ -16,6 +16,7 @@ let kLastLatitudeDelta      = "lastLatitudeDelta"
 let kLastLongitudeDelta     = "lastLongitudeDelta"
 let kLatitudeRegion         = "latitudeRegion"
 let kLongitudeRegion        = "longitudeRegion"
+let kNewCollection          = "newCollection"
 
 // MARK: - Notification Names
 let kCaptureCoordinates = "captureCoordinates"

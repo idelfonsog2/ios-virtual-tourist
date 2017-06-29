@@ -83,40 +83,64 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
     func downloadImageWith()  {
     }
     
+    func deleteSinglePhotos() {
+        let indexPaths =  self.collectionView.indexPathsForSelectedItems
+        for index in indexPaths! {
+            
+            // 1.
+            let photoToBeDeleted = fetchedResultsController?.object(at: index) as! Photo
+            Photo.deletePhoto(photo: photoToBeDeleted, context: delegate.stack.context)
+            
+            // 2.
+            self.collectionView.deselectItem(at: index, animated: true)
+        }
+        self.newCollectionButton.setTitle("New Collection", for: .normal)
+    }
+    
+    func deleteEntireAlbum() {
+        for photo in (fetchedResultsController?.fetchedObjects)! {
+            Photo.deletePhoto(photo: photo as! Photo, context: delegate.stack.context)
+        }
+        
+        UserDefaults.standard.set(true, forKey: kNewCollection)
+        UserDefaults.standard.set(true, forKey: kFirstTimePinDropped)
+        
+        let bbox = FIClient().bboxString(latitude: (self.pin?.latitude)!, longitude: (self.pin?.longitude)!)
+ 
+        FIClient().photoSearchFor(bbox: bbox, placeId: nil, completionHandler: { (response, success) in
+            if !success {
+                print("Error downloading picture")
+            } else {
+                let imageUrlArray = response as? [String]
+                
+                // FIXME: This could be improve though
+                if imageUrlArray!.count > 20 {
+                    for index in 0 ..< 21 {
+                        print("index \(index)")
+                        let photoObject = Photo(imageData: nil, url: imageUrlArray![index], context: self.delegate.stack.context)
+                        photoObject.pin = self.pin
+                        print("success")
+                    }
+                    
+                }
+            }
+        })
+    }
+    
     // MARK: - IBActions
     @IBAction func newCollectionButtonPressed(_ sender: UIButton) {
         if UserDefaults.standard.bool(forKey: kEditingPhotos) {
-
-            // Perform DELETE in the photo object (Photo Class)
-            // Remove selected items from the collection view
-            let indexPaths =  self.collectionView.indexPathsForSelectedItems
-            for index in indexPaths! {
-                
-                // 1.
-                let photoToBeDeleted = fetchedResultsController?.object(at: index) as! Photo
-                Photo.deletePhoto(photo: photoToBeDeleted, context: delegate.stack.context)
-
-                // 2.
-                self.collectionView.deselectItem(at: index, animated: true)
-            }
-            
-            self.newCollectionButton.setTitle("New Collection", for: .normal)
+            // Single Photos deletion
+            self.deleteSinglePhotos()
         } else {
-            
-            // TODO: delete the 21 images
-            // TODO: get new set of images
-            for photo in (fetchedResultsController?.fetchedObjects)! {
-                Photo.deletePhoto(photo: photo as! Photo, context: delegate.stack.context)
-            }
-            
-            let travelLocationVC = storyboard?.instantiateViewController(withIdentifier: kTravelLocationMapsViewController) as! TravelLocationMapsViewController
-            travelLocationVC.buildPhotoObjectsWithFlickr(21, for: self.pin, newImagesrRequested: true)
+            //Delete entire album
+            self.deleteEntireAlbum()
         }
     }
     
     // MARK: - UICollectionViewDelegate
     func numberOfSections(in collectionView: UICollectionView) -> Int {
-        return 1
+        return (fetchedResultsController?.sections?.count)!
     }
     
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
@@ -124,7 +148,7 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
         if let count = fetchedResultsController?.sections?[0].numberOfObjects {
             return count
         }
-      return 0
+        return 0
     }
     
     
@@ -135,6 +159,7 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
         cell.backgroundColor = UIColor.blue
         cell.activityIndicatorImageView.startAnimating()
         cell.imageView.image = UIImage(named: "placeholderimage")
+        
         // IF bool has not been set by the Flickr Network call
         //    RETURN CELL, We have object from the entity
         if !UserDefaults.standard.bool(forKey: kFirstTimePinDropped) {
@@ -143,7 +168,10 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
             cell.activityIndicatorImageView.stopAnimating()
             cell.activityIndicatorImageView.isHidden = true
         } else {
-            let photoObject = fetchedResultsController?.object(at: indexPath) as! Photo
+            guard let photoObject = fetchedResultsController?.object(at: indexPath) as? Photo else {
+                fatalError("Attempt to configure cell without a managed object")
+            }
+            
             FIClient().downloadImage(withURL: (photoObject.url!), completionHandler: {
                 (data, success) in
                 if !success {
@@ -193,10 +221,10 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
 
         switch type {
         case .insert:
-            // The index path of the changed object (this value is nil for insertions)
-//            self.blockOperation?.append(BlockOperation(block: {  
-//                self.collectionView.insertItems(at: [newIndexPath!])
-//            }))
+            //The index path of the changed object (this value is nil for insertions)
+            self.blockOperation?.append(BlockOperation(block: {  
+                self.collectionView.insertItems(at: [newIndexPath!])
+            }))
             
             break
         case .delete:
@@ -214,8 +242,10 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
     
     func controllerDidChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
         self.collectionView.performBatchUpdates({
-            for operation in self.blockOperation! {
-                operation.start()
+            if let blockOperation = self.blockOperation {
+                for operation in blockOperation {
+                    operation.start()
+                }
             }
         }) { (completed) in
         }

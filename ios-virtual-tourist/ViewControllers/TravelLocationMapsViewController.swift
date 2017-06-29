@@ -39,12 +39,14 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
         self.setupMapView()
         self.displaySavedPins()
         self.checkForLastCoordinates()
+        UserDefaults.standard.set(false, forKey: kEditModeOn)
     }
     
     override func viewWillDisappear(_ animated: Bool) {
         super.viewDidDisappear(animated)
         self.mapView.removeAnnotations(annotations!)
         self.arrayOfPins?.removeAll(keepingCapacity: true)
+        UserDefaults.standard.set(false, forKey: kEditModeOn)
     }
     // MARK: - TravelLoacationMapViewControllers
     
@@ -125,52 +127,35 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
 
     func buildPhotoObjectsWithFlickr(_ number: Int, for pin: Pin?, newImagesrRequested: Bool) {
         if pin != nil {
-            let bbox = bboxString(latitude: (pin?.latitude)!, longitude: (pin?.longitude)!)
+            let bbox = FIClient().bboxString(latitude: (pin?.latitude)!, longitude: (pin?.longitude)!)
             self.photoObjectsArray = []
-            // Create 21 Photo objects with default values
-            // Append them to an arr for later to use it to append the urls
             
-            FIClient().photoSearchFor(lat: (pin?.latitude)!, lon: (pin?.longitude)!, completionHandler: { (response, success) in
+            /*
+             Create 21 Photo objects with default values
+             Append them to an arr for later to use it to append the urls
+             */
+            FIClient().photoSearchFor(bbox: bbox, placeId: nil, completionHandler: { (response, success) in
                 if !success {
-                    
+                    print("Error downloading picture")
                 } else {
-                    let placeId = response as! String
-                    FIClient().photoSearchFor(bbox: bbox, placeId: nil, thisMany: number, completionHandler: { (response, success) in
-                        if !success {
-                            print("Error downloading picture")
-                        } else {
-                            let imageUrlArray = response as? [String]
-
-                            // Create only 21 photos
-                            if imageUrlArray!.count > 20 {
-                                for index in 0 ..< 21 {
-                                    let photoObject = Photo(imageData: nil, url: imageUrlArray![index], context: self.delegate.stack.context)
-                                    photoObject.pin = pin
-                                    self.photoObjectsArray?.append(photoObject)
-                                }
-                                NotificationCenter.default.post(Notification(name: Notification.Name(kDownloadImages)))
-                            }
-                            
+                    let imageUrlArray = response as? [String]
+                    
+                    // Create only 21 photos
+                    if imageUrlArray!.count > 20 {
+                        
+                        for index in 0 ..< 21 {
+                            let photoObject = Photo(imageData: nil, url: imageUrlArray![index], context: self.delegate.stack.context)
+                            photoObject.pin = pin
+                            self.photoObjectsArray?.append(photoObject)
                         }
-                    })
+                        
+                    }
                 }
             })
-            
-            
         }
     }
 
-    func bboxString(latitude: Double, longitude: Double) -> String {
-        if  latitude != 0 &&  longitude != 0 {
-            let minimumLon = max(longitude - Flickr.SearchBBoxHalfWidth, Flickr.SearchLonRange.0)
-            let minimumLat = max(latitude - Flickr.SearchBBoxHalfHeight, Flickr.SearchLatRange.0)
-            let maximumLon = min(longitude + Flickr.SearchBBoxHalfWidth, Flickr.SearchLonRange.1)
-            let maximumLat = min(latitude + Flickr.SearchBBoxHalfHeight, Flickr.SearchLatRange.1)
-            return "\(minimumLon),\(minimumLat),\(maximumLon),\(maximumLat)"
-        } else {
-            return "0,0,0,0"
-        }
-    }
+    
     
     // MARK: - IBActions
     @IBAction func dropPinButton(_ sender: UILongPressGestureRecognizer) {
