@@ -42,16 +42,23 @@ struct CoreDataStack {
         // Create the store coordinator
         coordinator = NSPersistentStoreCoordinator(managedObjectModel: model)
         
-        // create a context and add connect it to the coordinator
-        context = NSManagedObjectContext(concurrencyType: .mainQueueConcurrencyType)
-        context.persistentStoreCoordinator = coordinator
         
-        //FIXME: 🤔
+        /* 
+         ✅ To avoid blocking the UI because we are saving frequently we could save in the background queue
+         and it goes as follow:
+        */
+        
+        // Parent Background Context ⬆
         persistentContext = NSManagedObjectContext(concurrencyType: .privateQueueConcurrencyType)
         persistentContext.persistentStoreCoordinator = coordinator
         
+        // Child Main Context ⬆
+        context = NSManagedObjectContext(concurrencyType: .mainQueueConcurrencyType)
+        context.parent = persistentContext
         
-        //However, if a context has a parent context, then it has no coordinator.
+        
+        // Child Background context ⬆
+        // note:if a context has a parent context, then it has no coordinator.
         backgroundContext = NSManagedObjectContext(concurrencyType: .privateQueueConcurrencyType)
         backgroundContext.parent = context
         
