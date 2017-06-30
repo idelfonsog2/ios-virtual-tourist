@@ -82,7 +82,7 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
         do {
             arrayOfPins = []
             annotations = []
-            let array = try! delegate.stack.context.fetch((fetchedResultsController?.fetchRequest)!) as? [Pin]
+            let array = try delegate.stack.context.fetch((fetchedResultsController?.fetchRequest)!) as? [Pin]
             for pin in array! {
                 arrayOfPins!.append(pin)
                 let annotation = MKPointAnnotation()
@@ -169,11 +169,13 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
             pointAnnotation.coordinate = coord
 
             //Create the pin, it will store it in CoreData
-            let pinDropped = Pin(latitude: coord.latitude, longitude: coord.longitude, context: fetchedResultsController!.managedObjectContext)
-            self.buildPhotoObjectsWithFlickr(21, for: pinDropped, newImagesrRequested: false)
-            UserDefaults.standard.set(true, forKey: kFirstTimePinDropped)
+            self.delegate.stack.performBackgroundBatchOperation({ (context) in
+                let pinDropped = Pin(latitude: coord.latitude, longitude: coord.longitude, context: context)
+                self.buildPhotoObjectsWithFlickr(21, for: pinDropped, newImagesrRequested: false)
+                self.arrayOfPins?.append(pinDropped)
+            })
             
-            self.arrayOfPins?.append(pinDropped)
+            UserDefaults.standard.set(true, forKey: kFirstTimePinDropped)
             self.mapView.addAnnotation(pointAnnotation)
         }
     }

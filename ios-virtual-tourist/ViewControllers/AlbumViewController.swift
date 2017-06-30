@@ -80,7 +80,7 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
             let photoToBeDeleted = fetchedResultsController?.object(at: index) as! Photo
             //Photo().deletePhoto(photo: photoToBeDeleted, context: delegate.stack.context)
             
-            delegate.stack.context.delete(photoToBeDeleted as! Photo)
+            delegate.stack.context.delete(photoToBeDeleted)
             do {
                 try delegate.stack.context.save()
             } catch {
@@ -116,10 +116,10 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
                 
                 if imageUrlArray!.count > 20 {
                     for index in 0 ..< 21 {
-                        DispatchQueue.main.async {
-                            let photoObject = Photo(imageData: nil, url: imageUrlArray![index], context: self.delegate.stack.context)
+                        self.delegate.stack.performBackgroundBatchOperation({ (context) in
+                            let photoObject = Photo(imageData: nil, url: imageUrlArray![index], context: context)
                             photoObject.pin = self.pin
-                        }
+                        })
                     }
                 }
             }
@@ -128,11 +128,15 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
     
     // MARK: - IBActions
     @IBAction func newCollectionButtonPressed(_ sender: UIButton) {
+        
+        /*
+         This buttons changes functionality in order to remove
+         photos that had been selected or the entire Album
+         */
+        
         if UserDefaults.standard.bool(forKey: kEditingPhotos) {
-            // Single Photos deletion
             self.deleteSinglePhotos()
         } else {
-            //Delete entire album
             self.deleteEntireAlbum()
         }
     }
@@ -174,7 +178,7 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
                 if !success {
                     print("Not able to download image from URL in cellForItem")
                 } else {
-                    photoObject.imageData = data as! NSData
+                    photoObject.imageData = data as? NSData
                     DispatchQueue.main.async {
                         cell.imageView?.image = UIImage(data: data as! Data)
                         
