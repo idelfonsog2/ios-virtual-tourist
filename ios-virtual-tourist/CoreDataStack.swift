@@ -46,9 +46,12 @@ struct CoreDataStack {
         context = NSManagedObjectContext(concurrencyType: .mainQueueConcurrencyType)
         context.persistentStoreCoordinator = coordinator
         
+        //FIXME: 🤔
         persistentContext = NSManagedObjectContext(concurrencyType: .privateQueueConcurrencyType)
         persistentContext.persistentStoreCoordinator = coordinator
         
+        
+        //However, if a context has a parent context, then it has no coordinator.
         backgroundContext = NSManagedObjectContext(concurrencyType: .privateQueueConcurrencyType)
         backgroundContext.parent = context
         
