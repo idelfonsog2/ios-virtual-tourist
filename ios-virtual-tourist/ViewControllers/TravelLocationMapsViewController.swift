@@ -141,16 +141,14 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
                 } else {
                     let imageUrlArray = response as? [String]
                     
-                    // Create only 21 photos
-                    if imageUrlArray!.count > 20 {
-                        for index in 0 ..< 21 {
-                            self.delegate.stack.performBackgroundBatchOperation({ (context) in
-                                let photoObject = Photo(imageData: nil, url: imageUrlArray![index], context: context)
-                                photoObject.pin = pin
-                            })
-                            
-                        }
-                    }
+                        self.delegate.stack.performBackgroundBatchOperation({ (workerContext) in
+                            if imageUrlArray!.count > 20 {
+                                for index in 0 ..< 21 {
+                                    let photoObject = Photo(imageData: nil, url: imageUrlArray![index], context: self.delegate.stack.context)
+                                    photoObject.pin = pin
+                                }
+                            }
+                        })
                 }
             })
         }
@@ -169,11 +167,9 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
             pointAnnotation.coordinate = coord
 
             //Create the pin, it will store it in CoreData
-            self.delegate.stack.performBackgroundBatchOperation({ (context) in
-                let pinDropped = Pin(latitude: coord.latitude, longitude: coord.longitude, context: context)
-                self.buildPhotoObjectsWithFlickr(21, for: pinDropped, newImagesrRequested: false)
-                self.arrayOfPins?.append(pinDropped)
-            })
+            let pinDropped = Pin(latitude: coord.latitude, longitude: coord.longitude, context: self.delegate.stack.context)
+            self.buildPhotoObjectsWithFlickr(21, for: pinDropped, newImagesrRequested: false)
+            self.arrayOfPins?.append(pinDropped)
             
             UserDefaults.standard.set(true, forKey: kFirstTimePinDropped)
             self.mapView.addAnnotation(pointAnnotation)

@@ -178,10 +178,10 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
                 if !success {
                     print("Not able to download image from URL in cellForItem")
                 } else {
-                    photoObject.imageData = data as? NSData
+                    
                     DispatchQueue.main.async {
+                        photoObject.imageData = data as? NSData
                         cell.imageView?.image = UIImage(data: data as! Data)
-                        
                         cell.backgroundColor = UIColor.white
                         cell.activityIndicatorImageView.stopAnimating()
                         cell.activityIndicatorImageView.isHidden = true
