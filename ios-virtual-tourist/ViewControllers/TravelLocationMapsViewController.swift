@@ -140,15 +140,14 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
                     print("Error downloading picture")
                 } else {
                     let imageUrlArray = response as? [String]
-                    
-                        self.delegate.stack.performBackgroundBatchOperation({ (workerContext) in
-                            if imageUrlArray!.count > 20 {
-                                for index in 0 ..< 21 {
-                                    let photoObject = Photo(imageData: nil, url: imageUrlArray![index], context: self.delegate.stack.context)
-                                    photoObject.pin = pin
-                                }
+                    self.delegate.stack.performBackgroundBatchOperation({ (workerContext) in
+                        if imageUrlArray!.count > 20 {
+                            for index in 0 ..< 21 {
+                                let photoObject = Photo(imageData: nil, url: imageUrlArray![index], context: self.delegate.stack.context)
+                                photoObject.pin = pin
                             }
-                        })
+                        }
+                    })
                 }
             })
         }

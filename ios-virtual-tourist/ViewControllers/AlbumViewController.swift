@@ -89,18 +89,15 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
             self.collectionView.deselectItem(at: index, animated: true)
         }
         
+        UserDefaults.standard.set(false, forKey: kEditingPhotos)
         self.newCollectionButton.setTitle("New Collection", for: .normal)
     }
     
     func deleteEntireAlbum() {
         for photo in (fetchedResultsController?.fetchedObjects)! {
-            //Photo().deletePhoto(photo: photo as! Photo, context: delegate.stack.context)
-            delegate.stack.context.delete(photo as! Photo)
-            do {
-                try delegate.stack.context.save()
-            } catch {
-                fatalError("Unable to delete photo from CoreData")
-            }
+            self.delegate.stack.performBackgroundBatchOperation({ (context) in
+                context.delete(photo as! Photo)
+            })
         }
         
         UserDefaults.standard.set(true, forKey: kNewCollection)
@@ -114,14 +111,17 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
             } else {
                 let imageUrlArray = response as? [String]
                 
-                if imageUrlArray!.count > 20 {
-                    for index in 0 ..< 21 {
-                        self.delegate.stack.performBackgroundBatchOperation({ (context) in
-                            let photoObject = Photo(imageData: nil, url: imageUrlArray![index], context: context)
-                            photoObject.pin = self.pin
-                        })
-                    }
+                DispatchQueue.main.async {
+                    self.delegate.stack.performBackgroundBatchOperation({ (context) in
+                        if imageUrlArray!.count > 20 {
+                            for index in 0 ..< 21 {
+                                let photoObject = Photo(imageData: nil, url: imageUrlArray![index], context: context)
+                                photoObject.pin = self.pin
+                            }
+                        }
+                    })
                 }
+                
             }
         })
     }
@@ -131,7 +131,9 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
         
         /*
          This buttons changes functionality in order to remove
-         photos that had been selected or the entire Album
+         photos
+         true:  delete single photos
+         false: delete entire album
          */
         
         if UserDefaults.standard.bool(forKey: kEditingPhotos) {
@@ -157,7 +159,6 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let cell =  collectionView.dequeueReusableCell(withReuseIdentifier: kReuseFlicrCollectionViewCellIdentifier, for: indexPath) as! FlickrImageCollectionViewCell
         
-        cell.backgroundColor = UIColor.blue
         cell.activityIndicatorImageView.startAnimating()
         cell.imageView.image = UIImage(named: "placeholderimage")
         
@@ -179,8 +180,21 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
                     print("Not able to download image from URL in cellForItem")
                 } else {
                     
-                    DispatchQueue.main.async {
+//                    self.delegate.stack.performMainBatchOperation({ (_) in
+//                        photoObject.imageData = data as? NSData
+//                    })
+//                    
+                    self.delegate.stack.context.perform {
                         photoObject.imageData = data as? NSData
+                        
+                        do {
+                            try self.delegate.stack.context.save()
+                        } catch {
+                            fatalError("error while saving")
+                        }
+                    }
+                    
+                    DispatchQueue.main.async {
                         cell.imageView?.image = UIImage(data: data as! Data)
                         cell.backgroundColor = UIColor.white
                         cell.activityIndicatorImageView.stopAnimating()
@@ -225,13 +239,19 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
         switch type {
         case .insert:
             //The index path of the changed object (this value is nil for insertions)
-            self.blockOperation?.append(BlockOperation(block: {  
-                self.collectionView.insertItems(at: [newIndexPath!])
+            self.blockOperation?.append(BlockOperation(block: {
+                
+                // Photos are downloaded in the backgroundContext
+                DispatchQueue.main.async {
+                    self.collectionView.insertItems(at: [newIndexPath!])
+                }
             }))
             
             break
         case .delete:
             // The destination path for the object for insertions or moves (this value is nil for a deletion)
+            
+            // Photos are downloaded in the backgroundContext
             self.blockOperation?.append(BlockOperation(block: {
                 self.collectionView.deleteItems(at: [indexPath!])
             }))

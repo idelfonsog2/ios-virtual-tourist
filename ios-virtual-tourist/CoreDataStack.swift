@@ -173,7 +173,17 @@ extension CoreDataStack {
                 fatalError("Error while saving backgroundContext: \(error)")
             }
         }
-        
-        
+    }
+    
+    func performMainBatchOperation(_ batch: @escaping Batch) {
+        context.perform {
+            batch(self.context)
+            
+            do {
+                try self.context.save()
+            } catch {
+                fatalError("Error while saving in mainContext \(error)")
+            }
+        }
     }
 }
