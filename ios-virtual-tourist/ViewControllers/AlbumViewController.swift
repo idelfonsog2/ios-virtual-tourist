@@ -94,15 +94,26 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
     }
     
     func deleteEntireAlbum() {
-        for photo in (fetchedResultsController?.fetchedObjects)! {
-            self.delegate.stack.performBackgroundBatchOperation({ (context) in
-                context.delete(photo as! Photo)
-            })
+        // retrieve the objects as Photo
+        let photosAlbum = fetchedResultsController?.fetchedObjects as! [Photo]
+        
+        //Delete the objects from the SANDBOX
+        for photo in photosAlbum {
+            Photo().deletePhoto(photo: photo, context: self.delegate.stack.context)
         }
         
+        //Commit the objects deleted, if you try to modifying them it can cause an error due that objcets have been deleted
+        do {
+            try self.delegate.stack.saveContext()
+        } catch {
+            fatalError("Did not save context when assiging imageData property")
+        }
+        
+        //Set bools
         UserDefaults.standard.set(true, forKey: kNewCollection)
         UserDefaults.standard.set(true, forKey: kFirstTimePinDropped)
         
+        // Make request for new images
         let bbox = FIClient().bboxString(latitude: (self.pin?.latitude)!, longitude: (self.pin?.longitude)!)
  
         FIClient().photoSearchFor(bbox: bbox, placeId: nil, completionHandler: { (response, success) in
@@ -110,16 +121,19 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
                 print("Error downloading picture")
             } else {
                 let imageUrlArray = response as? [String]
-                
                 DispatchQueue.main.async {
-                    self.delegate.stack.performBackgroundBatchOperation({ (context) in
-                        if imageUrlArray!.count > 20 {
-                            for index in 0 ..< 21 {
-                                let photoObject = Photo(imageData: nil, url: imageUrlArray![index], context: context)
-                                photoObject.pin = self.pin
-                            }
+                    if imageUrlArray!.count > 20 {
+                        for index in 0 ..< 21 {
+                            let photoObject = Photo(imageData: nil, url: imageUrlArray![index], context: self.delegate.stack.context)
+                            photoObject.pin = self.pin
                         }
-                    })
+                        
+                        do {
+                            try self.delegate.stack.saveContext()
+                        } catch {
+                            fatalError("Did not save context when assiging imageData property")
+                        }
+                    }
                 }
                 
             }
@@ -128,13 +142,9 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
     
     // MARK: - IBActions
     @IBAction func newCollectionButtonPressed(_ sender: UIButton) {
-        
-        /*
-         This buttons changes functionality in order to remove
-         photos
+        /* This buttons changes functionality in order to remove photos
          true:  delete single photos
-         false: delete entire album
-         */
+         false: delete entire album */
         
         if UserDefaults.standard.bool(forKey: kEditingPhotos) {
             self.deleteSinglePhotos()
@@ -180,21 +190,15 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
                     print("Not able to download image from URL in cellForItem")
                 } else {
                     
-//                    self.delegate.stack.performMainBatchOperation({ (_) in
-//                        photoObject.imageData = data as? NSData
-//                    })
-//                    
-                    self.delegate.stack.context.perform {
+                    DispatchQueue.main.async {
                         photoObject.imageData = data as? NSData
                         
                         do {
-                            try self.delegate.stack.context.save()
+                          try self.delegate.stack.saveContext()
                         } catch {
-                            fatalError("error while saving")
+                            fatalError("Did not save context when assiging imageData property")
                         }
-                    }
-                    
-                    DispatchQueue.main.async {
+                        
                         cell.imageView?.image = UIImage(data: data as! Data)
                         cell.backgroundColor = UIColor.white
                         cell.activityIndicatorImageView.stopAnimating()

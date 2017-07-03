@@ -157,33 +157,3 @@ extension CoreDataStack {
         }
     }
 }
-
-extension CoreDataStack {
-    typealias Batch = (_ workerContext: NSManagedObjectContext) -> ()
-    
-    func performBackgroundBatchOperation(_ batch: @escaping Batch) {
-        
-        backgroundContext.perform {
-            batch(self.backgroundContext)
-            
-            //Save it to the parent context
-            do {
-                try self.backgroundContext.save()
-            } catch {
-                fatalError("Error while saving backgroundContext: \(error)")
-            }
-        }
-    }
-    
-    func performMainBatchOperation(_ batch: @escaping Batch) {
-        context.perform {
-            batch(self.context)
-            
-            do {
-                try self.context.save()
-            } catch {
-                fatalError("Error while saving in mainContext \(error)")
-            }
-        }
-    }
-}

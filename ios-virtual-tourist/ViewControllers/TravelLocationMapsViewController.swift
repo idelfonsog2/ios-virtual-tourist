@@ -140,14 +140,18 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
                     print("Error downloading picture")
                 } else {
                     let imageUrlArray = response as? [String]
-                    self.delegate.stack.performBackgroundBatchOperation({ (workerContext) in
-                        if imageUrlArray!.count > 20 {
-                            for index in 0 ..< 21 {
-                                let photoObject = Photo(imageData: nil, url: imageUrlArray![index], context: self.delegate.stack.context)
-                                photoObject.pin = pin
-                            }
+                    if imageUrlArray!.count > 20 {
+                        for index in 0 ..< 21 {
+                            let photoObject = Photo(imageData: nil, url: imageUrlArray![index], context: self.delegate.stack.context)
+                            photoObject.pin = pin
                         }
-                    })
+                        
+                        do {
+                            try self.delegate.stack.saveContext()
+                        } catch {
+                            fatalError("Did not save context when assiging imageData property")
+                        }
+                    }
                 }
             })
         }
@@ -167,6 +171,13 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
 
             //Create the pin, it will store it in CoreData
             let pinDropped = Pin(latitude: coord.latitude, longitude: coord.longitude, context: self.delegate.stack.context)
+            
+            do {
+                try self.delegate.stack.saveContext()
+            } catch {
+                fatalError("Did not save context when assiging imageData property")
+            }
+            
             self.buildPhotoObjectsWithFlickr(21, for: pinDropped, newImagesrRequested: false)
             self.arrayOfPins?.append(pinDropped)
             
