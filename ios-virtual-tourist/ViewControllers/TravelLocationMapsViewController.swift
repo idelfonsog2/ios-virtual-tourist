@@ -19,6 +19,7 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
     var editButton: UIBarButtonItem?
     var arrayOfPins: [Pin]?
     var annotations: [MKAnnotation]?
+    var selectedPin: Pin?
     
     // MARK: - IBOutlets
     @IBOutlet weak var mapView: MKMapView!
@@ -143,7 +144,8 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
                     if imageUrlArray!.count > 20 {
                         for index in 0 ..< 21 {
                             let photoObject = Photo(imageData: nil, url: imageUrlArray![index], context: self.delegate.stack.context)
-                            photoObject.pin = pin
+                            //photoObject.pin = pin
+                            pin?.addToPhotos(photoObject)
                         }
                         
                         do {

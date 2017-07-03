@@ -99,7 +99,8 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
         
         //Delete the objects from the SANDBOX
         for photo in photosAlbum {
-            Photo().deletePhoto(photo: photo, context: self.delegate.stack.context)
+            //Photo().deletePhoto(photo: photo, context: self.delegate.stack.context)
+            self.pin?.removeFromPhotos(photo)
         }
         
         //Commit the objects deleted, if you try to modifying them it can cause an error due that objcets have been deleted
@@ -192,12 +193,6 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
                     
                     DispatchQueue.main.async {
                         photoObject.imageData = data as? NSData
-                        
-                        do {
-                          try self.delegate.stack.saveContext()
-                        } catch {
-                            fatalError("Did not save context when assiging imageData property")
-                        }
                         
                         cell.imageView?.image = UIImage(data: data as! Data)
                         cell.backgroundColor = UIColor.white
