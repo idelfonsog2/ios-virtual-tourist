@@ -180,7 +180,6 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
                     
                     DispatchQueue.main.async {
                         photoObject.imageData = data as? NSData
-                        
                         cell.imageView?.image = UIImage(data: data as! Data)
                         cell.backgroundColor = UIColor.white
                         cell.activityIndicatorImageView.stopAnimating()
@@ -226,10 +225,7 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
         case .insert:
             //The index path of the changed object (this value is nil for insertions)
             self.blockOperation?.append(BlockOperation(block: {
-                // Photos are downloaded in the backgroundContext
-                DispatchQueue.main.async {
                     self.collectionView.insertItems(at: [newIndexPath!])
-                }
             }))
             break
         case .delete:
