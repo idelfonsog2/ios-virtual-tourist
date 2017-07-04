@@ -6,7 +6,7 @@
 //
 
 import CoreData
-
+import  UIKit
 // MARK: - CoreDataStack
 
 struct CoreDataStack {
@@ -143,7 +143,7 @@ extension CoreDataStack {
         if delayInSeconds > 0 {
             do {
                 try saveContext()
-                //print("Autosaving")
+                print("Autosaving")
             } catch {
                 print("Error while autosaving")
             }
@@ -156,26 +156,9 @@ extension CoreDataStack {
             }
         }
     }
-}
-
-extension CoreDataStack {
-    typealias Batch = (_ workerContext: NSManagedObjectContext) -> ()
     
-    func performBackgroundBatchOperation(_ batch: @escaping Batch) {
-        backgroundContext.perform {
-            
-            batch(self.backgroundContext)
-            
-            //Save it to the parent context
-            // normal saving can work then
-            
-            do {
-                try self.backgroundContext.save()
-            } catch {
-                fatalError("Error while saving backgroundContext: \(error)")
-            }
-        }
-        
-        
+    static func coreDataStack() -> CoreDataStack {
+        let delegate = UIApplication.shared.delegate as! AppDelegate
+        return delegate.stack
     }
 }

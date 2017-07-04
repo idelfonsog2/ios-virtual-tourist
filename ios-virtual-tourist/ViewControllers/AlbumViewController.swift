@@ -74,38 +74,39 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
 
     func deleteSinglePhotos() {
         
-        let indexPaths =  self.collectionView.indexPathsForSelectedItems
+        let indexPaths =  self.collectionView.indexPathsForSelectedItems?.sorted {
+             return $0 < $1
+        }
         
         for index in indexPaths! {
             let photoToBeDeleted = fetchedResultsController?.object(at: index) as! Photo
-            //Photo().deletePhoto(photo: photoToBeDeleted, context: delegate.stack.context)
-            
             delegate.stack.context.delete(photoToBeDeleted)
-            do {
-                try delegate.stack.context.save()
-            } catch {
-                fatalError("Unable to delete photo from CoreData")
-            }
-            self.collectionView.deselectItem(at: index, animated: true)
+            self.pin?.removeFromPhotos(photoToBeDeleted)
         }
         
+        try? self.delegate.stack.saveContext()
+        
+        UserDefaults.standard.set(false, forKey: kEditingPhotos)
         self.newCollectionButton.setTitle("New Collection", for: .normal)
     }
     
     func deleteEntireAlbum() {
-        for photo in (fetchedResultsController?.fetchedObjects)! {
-            //Photo().deletePhoto(photo: photo as! Photo, context: delegate.stack.context)
-            delegate.stack.context.delete(photo as! Photo)
-            do {
-                try delegate.stack.context.save()
-            } catch {
-                fatalError("Unable to delete photo from CoreData")
-            }
+        // retrieve the objects as Photo
+        let photosAlbum = fetchedResultsController?.fetchedObjects as! [Photo]
+        
+        //Delete the objects from the SANDBOX
+        for photo in photosAlbum {
+            //Photo().deletePhoto(photo: photo, context: self.delegate.stack.context)
+            self.pin?.removeFromPhotos(photo)
         }
         
+        try? self.delegate.stack.context.save()
+        
+        //Set bools
         UserDefaults.standard.set(true, forKey: kNewCollection)
         UserDefaults.standard.set(true, forKey: kFirstTimePinDropped)
         
+        // Make request for new images
         let bbox = FIClient().bboxString(latitude: (self.pin?.latitude)!, longitude: (self.pin?.longitude)!)
  
         FIClient().photoSearchFor(bbox: bbox, placeId: nil, completionHandler: { (response, success) in
@@ -113,26 +114,26 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
                 print("Error downloading picture")
             } else {
                 let imageUrlArray = response as? [String]
-                
-                if imageUrlArray!.count > 20 {
-                    for index in 0 ..< 21 {
-                        self.delegate.stack.performBackgroundBatchOperation({ (context) in
-                            let photoObject = Photo(imageData: nil, url: imageUrlArray![index], context: context)
-                            photoObject.pin = self.pin
-                        })
+                DispatchQueue.main.async {
+                    if imageUrlArray!.count > 20 {
+                        for index in 0 ..< 21 {
+                            let photoObject = Photo(imageData: nil, url: imageUrlArray![index], context: self.delegate.stack.context)
+                            self.pin!.addToPhotos(photoObject)
+                        }
+                        
+                        try? self.delegate.stack.context.save()
                     }
                 }
+                
             }
         })
     }
     
     // MARK: - IBActions
     @IBAction func newCollectionButtonPressed(_ sender: UIButton) {
-        
-        /*
-         This buttons changes functionality in order to remove
-         photos that had been selected or the entire Album
-         */
+        /* This buttons changes functionality in order to remove photos
+         true:  delete single photos
+         false: delete entire album */
         
         if UserDefaults.standard.bool(forKey: kEditingPhotos) {
             self.deleteSinglePhotos()
@@ -157,7 +158,6 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let cell =  collectionView.dequeueReusableCell(withReuseIdentifier: kReuseFlicrCollectionViewCellIdentifier, for: indexPath) as! FlickrImageCollectionViewCell
         
-        cell.backgroundColor = UIColor.blue
         cell.activityIndicatorImageView.startAnimating()
         cell.imageView.image = UIImage(named: "placeholderimage")
         
@@ -178,10 +178,10 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
                 if !success {
                     print("Not able to download image from URL in cellForItem")
                 } else {
-                    photoObject.imageData = data as? NSData
+                    
                     DispatchQueue.main.async {
+                        photoObject.imageData = data as? NSData
                         cell.imageView?.image = UIImage(data: data as! Data)
-                        
                         cell.backgroundColor = UIColor.white
                         cell.activityIndicatorImageView.stopAnimating()
                         cell.activityIndicatorImageView.isHidden = true
@@ -220,22 +220,22 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
         self.blockOperation?.removeAll()
     }
     
+    
     func controller(_ controller: NSFetchedResultsController<NSFetchRequestResult>, didChange anObject: Any, at indexPath: IndexPath?, for type: NSFetchedResultsChangeType, newIndexPath: IndexPath?) {
 
         switch type {
         case .insert:
             //The index path of the changed object (this value is nil for insertions)
-            self.blockOperation?.append(BlockOperation(block: {  
-                self.collectionView.insertItems(at: [newIndexPath!])
+            self.blockOperation?.append(BlockOperation(block: {
+                    self.collectionView.insertItems(at: [newIndexPath!])
             }))
-            
             break
         case .delete:
             // The destination path for the object for insertions or moves (this value is nil for a deletion)
+            // Photos are downloaded in the backgroundContext
             self.blockOperation?.append(BlockOperation(block: {
                 self.collectionView.deleteItems(at: [indexPath!])
             }))
-    
             break
             
         default:

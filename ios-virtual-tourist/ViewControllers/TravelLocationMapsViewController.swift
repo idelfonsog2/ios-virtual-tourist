@@ -14,11 +14,12 @@ import CoreData
 class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegate, UINavigationControllerDelegate {
 
     // MARK: - Properties
-    let delegate = UIApplication.shared.delegate as! AppDelegate
+    let stack = CoreDataStack.coreDataStack()
     var locationManager: CLLocationManager?
     var editButton: UIBarButtonItem?
     var arrayOfPins: [Pin]?
     var annotations: [MKAnnotation]?
+    var selectedPin: Pin?
     
     // MARK: - IBOutlets
     @IBOutlet weak var mapView: MKMapView!
@@ -53,8 +54,6 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
     // MARK: - TravelLoacationMapViewControllers
     func initCoreDataFetchRequest() {
         
-        let stack = delegate.stack
-        
         //Create the fetch Request
         let fr = NSFetchRequest<NSFetchRequestResult>(entityName: "Pin")
         let latitudeDescriptor = NSSortDescriptor(key: "latitude", ascending: false)
@@ -63,11 +62,9 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
         
         // Init FetchResultsController
         fetchedResultsController = NSFetchedResultsController(fetchRequest: fr, managedObjectContext: stack.context, sectionNameKeyPath: nil, cacheName: nil)
-        
     }
     
     func setupNavigationBar() {
-        //Add edit button to the navigaton bar
         editButton = UIBarButtonItem(title: "Edit", style: .plain, target: self, action: #selector(editMode))
         self.navigationItem.rightBarButtonItem = editButton
     }
@@ -79,23 +76,21 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
     }
     
     func displaySavedPins() {
-        do {
-            arrayOfPins = []
-            annotations = []
-            let array = try delegate.stack.context.fetch((fetchedResultsController?.fetchRequest)!) as? [Pin]
-            for pin in array! {
-                arrayOfPins!.append(pin)
-                let annotation = MKPointAnnotation()
-                annotation.coordinate = CLLocationCoordinate2D(latitude: pin.latitude, longitude: pin.longitude)
-                self.annotations?.append(annotation)
-            }
-            self.mapView.addAnnotations(annotations!)
-        } catch {
-            fatalError("Failed to retrive pins")
+        arrayOfPins = []
+        annotations = []
+        let array = self.fetchedResultsController?.fetchedObjects as? [Pin]
+        for pin in array! {
+            arrayOfPins!.append(pin)
+            let annotation = MKPointAnnotation()
+            annotation.coordinate = CLLocationCoordinate2D(latitude: pin.latitude, longitude: pin.longitude)
+            self.annotations?.append(annotation)
         }
+        self.mapView.addAnnotations(annotations!)
     }
     
     func checkForLastCoordinates() {
+        
+        // record the zoom level
         let latitudeDelta   = UserDefaults.standard.double(forKey: kLastLatitudeDelta)
         let longitudeDelta  = UserDefaults.standard.double(forKey: kLastLongitudeDelta)
         let centerLatitude  = UserDefaults.standard.double(forKey: kLatitudeRegion)
@@ -111,73 +106,70 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
     }
     
     func editMode() {
+        // UI Changes
         if self.editButton?.title != "DONE" {
             UserDefaults.standard.set(true, forKey: kEditModeOn)
             self.editButton?.title = "DONE"
-            //TODO: Show botton banner indicating that its in edit mode
-            //self.mapView.frame.origin.y = 60 * -1
-            self.bannerDeleteView.frame.origin.y = self.mapView.frame.maxY // size of the banner view
+
+            self.bannerDeleteView.frame.origin.y = self.mapView.frame.maxY
             self.view.addSubview(bannerDeleteView)
         } else {
             self.editButton?.title = "EDIT"
             UserDefaults.standard.set(false, forKey: kEditModeOn)
-            //TODO: Hide button banner
-            //self.mapView.frame.origin.y = 0
+
             self.bannerDeleteView.removeFromSuperview()
         }
     }
 
-    func buildPhotoObjectsWithFlickr(_ number: Int, for pin: Pin?, newImagesrRequested: Bool) {
+    func buildPhotoObjectsWithFlickr(for pin: Pin?) {
+        
+        // Call Flickr API base on the pin location bounding box
+        // @return 21 Photo Managed Objet with a relation to the specific pin
         if pin != nil {
             let bbox = FIClient().bboxString(latitude: (pin?.latitude)!, longitude: (pin?.longitude)!)
-            
-            /*
-             Create 21 Photo objects with default values
-             Append them to an arr for later to use it to append the urls
-             */
             FIClient().photoSearchFor(bbox: bbox, placeId: nil, completionHandler: { (response, success) in
                 if !success {
                     print("Error downloading picture")
                 } else {
                     let imageUrlArray = response as? [String]
-                    
-                    // Create only 21 photos
-                    if imageUrlArray!.count > 20 {
-                        for index in 0 ..< 21 {
-                            self.delegate.stack.performBackgroundBatchOperation({ (context) in
-                                let photoObject = Photo(imageData: nil, url: imageUrlArray![index], context: context)
-                                photoObject.pin = pin
-                            })
-                            
+                    DispatchQueue.main.async {
+                        if imageUrlArray!.count > 20 {
+                            for index in 0 ..< 21 {
+                                let photoObject = Photo(imageData: nil, url: imageUrlArray![index], context: self.stack.context)
+                                pin!.addToPhotos(photoObject)
+                            }
                         }
                     }
                 }
             })
         }
     }
-
     
     
     // MARK: - IBActions
     @IBAction func dropPinButton(_ sender: UILongPressGestureRecognizer) {
         
-        if sender.state == .began {
+        switch sender.state {
+        case .began:
             let touchpoint: CGPoint = sender.location(in: self.mapView)
             let coord = self.mapView.convert(touchpoint, toCoordinateFrom: mapView)
             
             let pointAnnotation = MKPointAnnotation()
             pointAnnotation.coordinate = coord
-
+            
             //Create the pin, it will store it in CoreData
-            self.delegate.stack.performBackgroundBatchOperation({ (context) in
-                let pinDropped = Pin(latitude: coord.latitude, longitude: coord.longitude, context: context)
-                self.buildPhotoObjectsWithFlickr(21, for: pinDropped, newImagesrRequested: false)
-                self.arrayOfPins?.append(pinDropped)
-            })
+            let pinDropped = Pin(latitude: coord.latitude, longitude: coord.longitude, context: stack.context)
+            
+            self.buildPhotoObjectsWithFlickr(for: pinDropped)
+            self.arrayOfPins?.append(pinDropped)
+            
+            self.mapView.addAnnotation(pointAnnotation)
             
             UserDefaults.standard.set(true, forKey: kFirstTimePinDropped)
-            self.mapView.addAnnotation(pointAnnotation)
+        default: break
         }
+        
+        
     }
     
     // MARK: - MKMapViewDelegate
@@ -205,27 +197,24 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
     }
 
     func mapView(_ mapView: MKMapView, didSelect view: MKAnnotationView) {
+        var pinSelected: Pin?
+        
         //Evaluate the state of the navigation button on the right
         let isEditOn = UserDefaults.standard.bool(forKey: kEditModeOn)
         
-        let stack = delegate.stack
-        var pinSelected: Pin?
-        
-        //Look for the matching selected pin in the tempArray
+        // Locate the selected Pin
         for pinView in arrayOfPins! {
             if pinView.latitude == view.annotation?.coordinate.latitude && pinView.longitude == view.annotation?.coordinate.longitude {
                 pinSelected = pinView
             }
         }
         
-        // Pass it or delete it
+        // Delete or ViewDetails for the selected Pin base on isEditOn
         if let pinEdit = pinSelected {
             if isEditOn {
-                // Delete Pin
-                Pin.deleteObject(pin: pinEdit, context: stack.context)
+                stack.context.delete(pinEdit)
                 self.mapView.removeAnnotation(view.annotation!)
             } else {
-                // View AlbumVC for the pin selected
                 let albumVC = storyboard?.instantiateViewController(withIdentifier: "AlbumViewController") as! AlbumViewController
                 albumVC.pin = pinEdit
                 albumVC.mapRegion = self.mapView.region
