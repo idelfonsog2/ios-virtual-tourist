@@ -80,20 +80,16 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
     }
     
     func displaySavedPins() {
-        do {
-            arrayOfPins = []
-            annotations = []
-            let array = try delegate.stack.context.fetch((fetchedResultsController?.fetchRequest)!) as? [Pin]
-            for pin in array! {
-                arrayOfPins!.append(pin)
-                let annotation = MKPointAnnotation()
-                annotation.coordinate = CLLocationCoordinate2D(latitude: pin.latitude, longitude: pin.longitude)
-                self.annotations?.append(annotation)
-            }
-            self.mapView.addAnnotations(annotations!)
-        } catch {
-            fatalError("Failed to retrive pins")
+        arrayOfPins = []
+        annotations = []
+        let array = self.fetchedResultsController?.fetchedObjects as? [Pin]
+        for pin in array! {
+            arrayOfPins!.append(pin)
+            let annotation = MKPointAnnotation()
+            annotation.coordinate = CLLocationCoordinate2D(latitude: pin.latitude, longitude: pin.longitude)
+            self.annotations?.append(annotation)
         }
+        self.mapView.addAnnotations(annotations!)
     }
     
     func checkForLastCoordinates() {
@@ -115,15 +111,13 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
         if self.editButton?.title != "DONE" {
             UserDefaults.standard.set(true, forKey: kEditModeOn)
             self.editButton?.title = "DONE"
-            //TODO: Show botton banner indicating that its in edit mode
-            //self.mapView.frame.origin.y = 60 * -1
+
             self.bannerDeleteView.frame.origin.y = self.mapView.frame.maxY // size of the banner view
             self.view.addSubview(bannerDeleteView)
         } else {
             self.editButton?.title = "EDIT"
             UserDefaults.standard.set(false, forKey: kEditModeOn)
-            //TODO: Hide button banner
-            //self.mapView.frame.origin.y = 0
+
             self.bannerDeleteView.removeFromSuperview()
         }
     }
@@ -131,7 +125,6 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
     func buildPhotoObjectsWithFlickr(_ number: Int, for pin: Pin?, newImagesrRequested: Bool) {
         if pin != nil {
             let bbox = FIClient().bboxString(latitude: (pin?.latitude)!, longitude: (pin?.longitude)!)
-            
             /*
              Create 21 Photo objects with default values
              Append them to an arr for later to use it to append the urls
@@ -144,14 +137,7 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
                     if imageUrlArray!.count > 20 {
                         for index in 0 ..< 21 {
                             let photoObject = Photo(imageData: nil, url: imageUrlArray![index], context: self.delegate.stack.context)
-                            //photoObject.pin = pin
-                            pin?.addToPhotos(photoObject)
-                        }
-                        
-                        do {
-                            try self.delegate.stack.saveContext()
-                        } catch {
-                            fatalError("Did not save context when assiging imageData property")
+                            pin!.addToPhotos(photoObject)
                         }
                     }
                 }
@@ -173,12 +159,6 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
 
             //Create the pin, it will store it in CoreData
             let pinDropped = Pin(latitude: coord.latitude, longitude: coord.longitude, context: self.delegate.stack.context)
-            
-            do {
-                try self.delegate.stack.saveContext()
-            } catch {
-                fatalError("Did not save context when assiging imageData property")
-            }
             
             self.buildPhotoObjectsWithFlickr(21, for: pinDropped, newImagesrRequested: false)
             self.arrayOfPins?.append(pinDropped)
@@ -230,7 +210,7 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
         if let pinEdit = pinSelected {
             if isEditOn {
                 // Delete Pin
-                Pin.deleteObject(pin: pinEdit, context: stack.context)
+                stack.context.delete(pinEdit)
                 self.mapView.removeAnnotation(view.annotation!)
             } else {
                 // View AlbumVC for the pin selected

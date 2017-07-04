@@ -78,14 +78,7 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
         
         for index in indexPaths! {
             let photoToBeDeleted = fetchedResultsController?.object(at: index) as! Photo
-            //Photo().deletePhoto(photo: photoToBeDeleted, context: delegate.stack.context)
-            
             delegate.stack.context.delete(photoToBeDeleted)
-            do {
-                try delegate.stack.context.save()
-            } catch {
-                fatalError("Unable to delete photo from CoreData")
-            }
             self.collectionView.deselectItem(at: index, animated: true)
         }
         
@@ -127,12 +120,6 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
                         for index in 0 ..< 21 {
                             let photoObject = Photo(imageData: nil, url: imageUrlArray![index], context: self.delegate.stack.context)
                             photoObject.pin = self.pin
-                        }
-                        
-                        do {
-                            try self.delegate.stack.saveContext()
-                        } catch {
-                            fatalError("Did not save context when assiging imageData property")
                         }
                     }
                 }
@@ -239,22 +226,18 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
         case .insert:
             //The index path of the changed object (this value is nil for insertions)
             self.blockOperation?.append(BlockOperation(block: {
-                
                 // Photos are downloaded in the backgroundContext
                 DispatchQueue.main.async {
                     self.collectionView.insertItems(at: [newIndexPath!])
                 }
             }))
-            
             break
         case .delete:
             // The destination path for the object for insertions or moves (this value is nil for a deletion)
-            
             // Photos are downloaded in the backgroundContext
             self.blockOperation?.append(BlockOperation(block: {
                 self.collectionView.deleteItems(at: [indexPath!])
             }))
-    
             break
             
         default:
