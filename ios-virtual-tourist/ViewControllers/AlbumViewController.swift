@@ -74,13 +74,17 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
 
     func deleteSinglePhotos() {
         
-        let indexPaths =  self.collectionView.indexPathsForSelectedItems
+        let indexPaths =  self.collectionView.indexPathsForSelectedItems?.sorted {
+             return $0 < $1
+        }
         
         for index in indexPaths! {
             let photoToBeDeleted = fetchedResultsController?.object(at: index) as! Photo
             delegate.stack.context.delete(photoToBeDeleted)
-            self.collectionView.deselectItem(at: index, animated: true)
+            self.pin?.removeFromPhotos(photoToBeDeleted)
         }
+        
+        try? self.delegate.stack.saveContext()
         
         UserDefaults.standard.set(false, forKey: kEditingPhotos)
         self.newCollectionButton.setTitle("New Collection", for: .normal)
@@ -96,12 +100,7 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
             self.pin?.removeFromPhotos(photo)
         }
         
-        //Commit the objects deleted, if you try to modifying them it can cause an error due that objcets have been deleted
-        do {
-            try self.delegate.stack.saveContext()
-        } catch {
-            fatalError("Did not save context when assiging imageData property")
-        }
+        try? self.delegate.stack.context.save()
         
         //Set bools
         UserDefaults.standard.set(true, forKey: kNewCollection)
@@ -119,8 +118,10 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
                     if imageUrlArray!.count > 20 {
                         for index in 0 ..< 21 {
                             let photoObject = Photo(imageData: nil, url: imageUrlArray![index], context: self.delegate.stack.context)
-                            photoObject.pin = self.pin
+                            self.pin!.addToPhotos(photoObject)
                         }
+                        
+                        try? self.delegate.stack.context.save()
                     }
                 }
                 
@@ -218,6 +219,7 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
     func controllerWillChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
         self.blockOperation?.removeAll()
     }
+    
     
     func controller(_ controller: NSFetchedResultsController<NSFetchRequestResult>, didChange anObject: Any, at indexPath: IndexPath?, for type: NSFetchedResultsChangeType, newIndexPath: IndexPath?) {
 
