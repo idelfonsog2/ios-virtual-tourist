@@ -159,6 +159,7 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
             
             //Create the pin, it will store it in CoreData
             let pinDropped = Pin(latitude: coord.latitude, longitude: coord.longitude, context: stack.context)
+            self.stack.save()
             
             self.buildPhotoObjectsWithFlickr(for: pinDropped)
             self.arrayOfPins?.append(pinDropped)
@@ -198,6 +199,8 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
 
     func mapView(_ mapView: MKMapView, didSelect view: MKAnnotationView) {
         var pinSelected: Pin?
+        //Deselect pin
+        self.mapView.deselectAnnotation(view.annotation, animated: false)
         
         //Evaluate the state of the navigation button on the right
         let isEditOn = UserDefaults.standard.bool(forKey: kEditModeOn)
@@ -208,6 +211,7 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
                 pinSelected = pinView
             }
         }
+        
         
         // Delete or ViewDetails for the selected Pin base on isEditOn
         if let pinEdit = pinSelected {

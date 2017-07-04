@@ -18,6 +18,7 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
     var mapRegion: MKCoordinateRegion?
     let delegate = UIApplication.shared.delegate as! AppDelegate
     var blockOperation: [BlockOperation]? = [BlockOperation]()
+    let stack = CoreDataStack.coreDataStack()
     
     // MARK: - IBOutlets
     @IBOutlet weak var collectionView: UICollectionView!
@@ -84,7 +85,7 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
             self.pin?.removeFromPhotos(photoToBeDeleted)
         }
         
-        try? self.delegate.stack.saveContext()
+        try? self.stack.saveContext()
         
         UserDefaults.standard.set(false, forKey: kEditingPhotos)
         self.newCollectionButton.setTitle("New Collection", for: .normal)
@@ -119,9 +120,10 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
                         for index in 0 ..< 21 {
                             let photoObject = Photo(imageData: nil, url: imageUrlArray![index], context: self.delegate.stack.context)
                             self.pin!.addToPhotos(photoObject)
+                            photoObject.pin = self.pin
                         }
                         
-                        try? self.delegate.stack.context.save()
+                        try? self.stack.saveContext()
                     }
                 }
                 
@@ -161,31 +163,27 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
         cell.activityIndicatorImageView.startAnimating()
         cell.imageView.image = UIImage(named: "placeholderimage")
         
+        let photo = fetchedResultsController?.object(at: indexPath) as! Photo
 
         // Retrieve Flickr or ModelObject Data
-        if !UserDefaults.standard.bool(forKey: kFirstTimePinDropped) {
-            let photo = fetchedResultsController?.object(at: indexPath) as! Photo
+        if photo.imageData != nil {
             cell.imageView?.image = UIImage(data: photo.imageData! as Data)
             cell.activityIndicatorImageView.stopAnimating()
             cell.activityIndicatorImageView.isHidden = true
         } else {
-            guard let photoObject = fetchedResultsController?.object(at: indexPath) as? Photo else {
-                fatalError("Attempt to configure cell without a managed object")
-            }
-            
-            FIClient().downloadImage(withURL: (photoObject.url!), completionHandler: {
+            FIClient().downloadImage(withURL: (photo.url!), completionHandler: {
                 (data, success) in
                 if !success {
                     print("Not able to download image from URL in cellForItem")
                 } else {
-                    
                     DispatchQueue.main.async {
-                        photoObject.imageData = data as? NSData
+                        photo.imageData = data as? NSData
                         cell.imageView?.image = UIImage(data: data as! Data)
                         cell.backgroundColor = UIColor.white
                         cell.activityIndicatorImageView.stopAnimating()
                         cell.activityIndicatorImageView.isHidden = true
                     }
+                    self.stack.save()
                 }
             })
         }
