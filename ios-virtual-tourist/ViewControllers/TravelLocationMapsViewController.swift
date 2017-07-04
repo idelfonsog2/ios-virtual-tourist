@@ -14,7 +14,7 @@ import CoreData
 class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegate, UINavigationControllerDelegate {
 
     // MARK: - Properties
-    let delegate = UIApplication.shared.delegate as! AppDelegate
+    let stack = CoreDataStack.coreDataStack()
     var locationManager: CLLocationManager?
     var editButton: UIBarButtonItem?
     var arrayOfPins: [Pin]?
@@ -54,8 +54,6 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
     // MARK: - TravelLoacationMapViewControllers
     func initCoreDataFetchRequest() {
         
-        let stack = delegate.stack
-        
         //Create the fetch Request
         let fr = NSFetchRequest<NSFetchRequestResult>(entityName: "Pin")
         let latitudeDescriptor = NSSortDescriptor(key: "latitude", ascending: false)
@@ -64,11 +62,9 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
         
         // Init FetchResultsController
         fetchedResultsController = NSFetchedResultsController(fetchRequest: fr, managedObjectContext: stack.context, sectionNameKeyPath: nil, cacheName: nil)
-        
     }
     
     func setupNavigationBar() {
-        //Add edit button to the navigaton bar
         editButton = UIBarButtonItem(title: "Edit", style: .plain, target: self, action: #selector(editMode))
         self.navigationItem.rightBarButtonItem = editButton
     }
@@ -93,6 +89,8 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
     }
     
     func checkForLastCoordinates() {
+        
+        // record the zoom level
         let latitudeDelta   = UserDefaults.standard.double(forKey: kLastLatitudeDelta)
         let longitudeDelta  = UserDefaults.standard.double(forKey: kLastLongitudeDelta)
         let centerLatitude  = UserDefaults.standard.double(forKey: kLatitudeRegion)
@@ -108,6 +106,7 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
     }
     
     func editMode() {
+        // UI Changes
         if self.editButton?.title != "DONE" {
             UserDefaults.standard.set(true, forKey: kEditModeOn)
             self.editButton?.title = "DONE"
@@ -122,7 +121,7 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
         }
     }
 
-    func buildPhotoObjectsWithFlickr(_ number: Int, for pin: Pin?, newImagesrRequested: Bool) {
+    func buildPhotoObjectsWithFlickr(for pin: Pin?) {
         
         // Call Flickr API base on the pin location bounding box
         // @return 21 Photo Managed Objet with a relation to the specific pin
@@ -136,7 +135,7 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
                     DispatchQueue.main.async {
                         if imageUrlArray!.count > 20 {
                             for index in 0 ..< 21 {
-                                let photoObject = Photo(imageData: nil, url: imageUrlArray![index], context: self.delegate.stack.context)
+                                let photoObject = Photo(imageData: nil, url: imageUrlArray![index], context: self.stack.context)
                                 pin!.addToPhotos(photoObject)
                             }
                         }
@@ -145,7 +144,6 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
             })
         }
     }
-
     
     
     // MARK: - IBActions
@@ -160,15 +158,18 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
             pointAnnotation.coordinate = coord
             
             //Create the pin, it will store it in CoreData
-            let pinDropped = Pin(latitude: coord.latitude, longitude: coord.longitude, context: self.delegate.stack.context)
+            let pinDropped = Pin(latitude: coord.latitude, longitude: coord.longitude, context: stack.context)
             
-            self.buildPhotoObjectsWithFlickr(21, for: pinDropped, newImagesrRequested: false)
+            self.buildPhotoObjectsWithFlickr(for: pinDropped)
             self.arrayOfPins?.append(pinDropped)
             
-            UserDefaults.standard.set(true, forKey: kFirstTimePinDropped)
             self.mapView.addAnnotation(pointAnnotation)
+            
+            UserDefaults.standard.set(true, forKey: kFirstTimePinDropped)
         default: break
         }
+        
+        
     }
     
     // MARK: - MKMapViewDelegate
@@ -196,8 +197,6 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
     }
 
     func mapView(_ mapView: MKMapView, didSelect view: MKAnnotationView) {
-        
-        let stack = delegate.stack
         var pinSelected: Pin?
         
         //Evaluate the state of the navigation button on the right

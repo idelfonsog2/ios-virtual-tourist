@@ -6,7 +6,7 @@
 //
 
 import CoreData
-
+import  UIKit
 // MARK: - CoreDataStack
 
 struct CoreDataStack {
@@ -155,5 +155,10 @@ extension CoreDataStack {
                 self.autoSave(delayInSeconds)
             }
         }
+    }
+    
+    static func coreDataStack() -> CoreDataStack {
+        let delegate = UIApplication.shared.delegate as! AppDelegate
+        return delegate.stack
     }
 }
