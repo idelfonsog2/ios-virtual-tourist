@@ -18,9 +18,7 @@ struct CoreDataStack {
     private let modelURL: URL
     internal let dbURL: URL
     let context: NSManagedObjectContext
-    let backgroundContext: NSManagedObjectContext
-    let persistentContext: NSManagedObjectContext
-
+    
     // MARK: Initializers
     
     init?(modelName: String) {
@@ -42,25 +40,9 @@ struct CoreDataStack {
         // Create the store coordinator
         coordinator = NSPersistentStoreCoordinator(managedObjectModel: model)
         
-        
-        /* 
-         ✅ To avoid blocking the UI because we are saving frequently we could save in the background queue
-         and it goes as follow:
-        */
-        
-        // Parent Background Context ⬆
-        persistentContext = NSManagedObjectContext(concurrencyType: .privateQueueConcurrencyType)
-        persistentContext.persistentStoreCoordinator = coordinator
-        
-        // Child Main Context ⬆
+        // create a context and add connect it to the coordinator
         context = NSManagedObjectContext(concurrencyType: .mainQueueConcurrencyType)
-        context.parent = persistentContext
-        
-        
-        // Child Background context ⬆
-        // note:if a context has a parent context, then it has no coordinator.
-        backgroundContext = NSManagedObjectContext(concurrencyType: .privateQueueConcurrencyType)
-        backgroundContext.parent = context
+        context.persistentStoreCoordinator = coordinator
         
         // Add a SQLite store located in the documents folder
         let fm = FileManager.default
@@ -104,33 +86,6 @@ internal extension CoreDataStack  {
 // MARK: - CoreDataStack (Save Data)
 
 extension CoreDataStack {
-    
-    func save() {
-        // We call this synchronously, but it's a very fast
-        // operation (it doesn't hit the disk). We need to know
-        // when it ends so we can call the next save (on the persisting
-        // context). This last one might take some time and is done
-        // in a background queue
-        context.performAndWait() {
-            
-            if self.context.hasChanges {
-                do {
-                    try self.context.save()
-                } catch {
-                    fatalError("Error while saving main context: \(error)")
-                }
-                
-                // now we save in the background
-                self.persistentContext.perform() {
-                    do {
-                        try self.persistentContext.save()
-                    } catch {
-                        fatalError("Error while saving persisting context: \(error)")
-                    }
-                }
-            }
-        }
-    }
     
     func saveContext() throws {
         if context.hasChanges {

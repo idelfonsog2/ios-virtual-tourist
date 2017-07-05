@@ -159,7 +159,11 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
             
             //Create the pin, it will store it in CoreData
             let pinDropped = Pin(latitude: coord.latitude, longitude: coord.longitude, context: stack.context)
-            self.stack.save()
+            do {
+                try self.stack.saveContext()
+            } catch {
+                print("error saving in pin dropped")
+            }
             
             self.buildPhotoObjectsWithFlickr(for: pinDropped)
             self.arrayOfPins?.append(pinDropped)
@@ -218,6 +222,12 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
             if isEditOn {
                 stack.context.delete(pinEdit)
                 self.mapView.removeAnnotation(view.annotation!)
+                
+                do {
+                 try self.stack.saveContext()
+                } catch {
+                    print("error saving")
+                }
             } else {
                 let albumVC = storyboard?.instantiateViewController(withIdentifier: "AlbumViewController") as! AlbumViewController
                 albumVC.pin = pinEdit

@@ -182,8 +182,14 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
                         cell.backgroundColor = UIColor.white
                         cell.activityIndicatorImageView.stopAnimating()
                         cell.activityIndicatorImageView.isHidden = true
+                        
+                        do {
+                            try self.stack.saveContext()
+                        } catch {
+                            print("error saving")
+                        }
                     }
-                    self.stack.save()
+                    
                 }
             })
         }
