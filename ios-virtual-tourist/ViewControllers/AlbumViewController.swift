@@ -55,7 +55,7 @@ class AlbumViewController: CoreDataViewController, UICollectionViewDelegate, UIC
         
         //Instantiate FetchRequest
         let fr = NSFetchRequest<NSFetchRequestResult>(entityName: "Photo")
-        fr.sortDescriptors = [NSSortDescriptor(key: "url", ascending: false), NSSortDescriptor(key: "imageData", ascending: false)]
+        fr.sortDescriptors = [NSSortDescriptor(key: "url", ascending: false)]
         let pred = NSPredicate(format: "pin == %@", pin!)
         fr.predicate = pred
         
