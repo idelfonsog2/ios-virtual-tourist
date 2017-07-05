@@ -30,12 +30,13 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
     override func viewDidLoad() {
         super.viewDidLoad()
         self.title = "Virtual Tourist"
-        self.initCoreDataFetchRequest()
         self.setupNavigationBar()
     }
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        self.initCoreDataFetchRequest()
+        
         self.setupMapView()
         self.displaySavedPins()
         self.checkForLastCoordinates()
@@ -62,6 +63,12 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
         
         // Init FetchResultsController
         fetchedResultsController = NSFetchedResultsController(fetchRequest: fr, managedObjectContext: stack.context, sectionNameKeyPath: nil, cacheName: nil)
+    }
+    
+    func removeSelectedAnnotations() {
+        for selected in self.mapView.selectedAnnotations {
+            self.mapView.deselectAnnotation(selected, animated: false)
+        }
     }
     
     func setupNavigationBar() {
@@ -203,8 +210,6 @@ class TravelLocationMapsViewController: CoreDataViewController, MKMapViewDelegat
 
     func mapView(_ mapView: MKMapView, didSelect view: MKAnnotationView) {
         var pinSelected: Pin?
-        //Deselect pin
-        self.mapView.deselectAnnotation(view.annotation, animated: false)
         
         //Evaluate the state of the navigation button on the right
         let isEditOn = UserDefaults.standard.bool(forKey: kEditModeOn)
